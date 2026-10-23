@@ -18,6 +18,7 @@ A centralized, level-based academic itinerary app for a Software Engineering dep
 ## 1.3 Solution
 
 Instead of information scattered across informal channels, it lives in one structured space per level:
+
 - Verified posting — only onboarded, admin-approved Course Reps (CRs) can post, so information is trustworthy by design.
 - Level-wide visibility — every student in a level automatically receives every CR post for that level; no manual per-course enrollment needed, since all students in a level share the same courses.
 - Personal AI planning — students can privately add their own tasks (typed), and AI arranges them by difficulty to help reduce last-minute stress.
@@ -25,11 +26,11 @@ Instead of information scattered across informal channels, it lives in one struc
 
 ## 1.4 Roles
 
-| Role | Description |
-|---|---|
-| **Admin** | Onboards/verifies CRs, manages courses (code, title, credit unit), manages Resources, triggers level promotion at session end, toggles the global semester state |
+| Role                | Description                                                                                                                                                                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Admin**           | Onboards/verifies CRs, manages courses (code, title, credit unit), manages Resources, triggers level promotion at session end, toggles the global semester state                                                                                      |
 | **Course Rep (CR)** | Up to 3 per level (1 Main CR + up to 2 Assistant CRs). Main CR has extra power (can edit/remove Assistant posts, manage courses). Posts announcements tagged to a course with optional difficulty. Can edit Resources. Receives comments in an inbox. |
-| **Student** | Belongs to exactly one level at a time (auto-mapped via join code at signup). Views level-wide posts, calendar, Resources (scoped to their level+current semester), personal itinerary, CGPA calculator. Can comment on CR posts. |
+| **Student**         | Belongs to exactly one level at a time (auto-mapped via join code at signup). Views level-wide posts, calendar, Resources (scoped to their level+current semester), personal itinerary, CGPA calculator. Can comment on CR posts.                     |
 
 ## 1.5 Core Concepts
 
@@ -42,6 +43,7 @@ Instead of information scattered across informal channels, it lives in one struc
 ## 1.6 MVP (v1) Features
 
 **Core spine (must-have):**
+
 - Auth & role-based access (Admin, CR, Student)
 - Level spaces with join-code-based onboarding (auto level mapping)
 - Courses (code, title, credit unit) — set by Admin or CR
@@ -50,22 +52,24 @@ Instead of information scattered across informal channels, it lives in one struc
 - Deadline countdowns
 
 **Included in MVP:**
+
 - **Resources** — static, admin-managed, CR-editable, structured Level → Semester → Course → Materials; students view-only, scoped to their level + current semester
 - **CGPA Calculator** — manual entry (course code, title, grade) per semester; system pulls credit unit from Courses and computes GPA/CGPA; no result uploads
 - **AI Smart Planning** — students type personal tasks; AI (Groq) arranges them by difficulty; students can manually adjust difficulty on their own tasks
 - **Comments on posts** — students comment under a CR post; routed to the CR's inbox (not a public thread); CR gets a push notification per comment, same priority as posts
 
 **Explicitly deferred to v2:**
+
 - Voice-to-itinerary input (typed-only for MVP)
 - Any open/public chat system
 
 ## 1.7 Notification Rules
 
-| Event | Recipient | Channel |
-|---|---|---|
-| CR creates a post | Entire level | Push (FCM) |
-| Student comments on a post | Post's CR | Push (FCM) |
-| Personal itinerary reminders | The student | Push (FCM) |
+| Event                        | Recipient    | Channel    |
+| ---------------------------- | ------------ | ---------- |
+| CR creates a post            | Entire level | Push (FCM) |
+| Student comments on a post   | Post's CR    | Push (FCM) |
+| Personal itinerary reminders | The student  | Push (FCM) |
 
 ## 1.8 Out of Scope (by design decision)
 
@@ -81,17 +85,17 @@ Instead of information scattered across informal channels, it lives in one struc
 
 ## 2.1 Tech Stack Summary
 
-| Layer | Choice |
-|---|---|
-| Frontend (mobile) | React Native |
-| Frontend (web) | React Native Web (shared codebase) |
-| Backend | Node.js + Express |
-| Database | PostgreSQL |
-| Auth | Custom JWT (access + refresh tokens) |
-| Push notifications | Firebase Cloud Messaging (FCM) |
-| AI (smart planning) | Groq API (with fallback-provider design, since AI is assistive, not core) |
-| File storage (Resources) | AWS S3 or Cloudinary |
-| Hosting | Render |
+| Layer                    | Choice                                                                    |
+| ------------------------ | ------------------------------------------------------------------------- |
+| Frontend (mobile)        | React Native                                                              |
+| Frontend (web)           | React Native Web (shared codebase)                                        |
+| Backend                  | Node.js + Express                                                         |
+| Database                 | PostgreSQL                                                                |
+| Auth                     | Custom JWT (access + refresh tokens)                                      |
+| Push notifications       | Firebase Cloud Messaging (FCM)                                            |
+| AI (smart planning)      | Groq API (with fallback-provider design, since AI is assistive, not core) |
+| File storage (Resources) | AWS S3 or Cloudinary                                                      |
+| Hosting                  | Render                                                                    |
 
 ## 2.2 High-Level System Flow
 
@@ -185,149 +189,162 @@ promotion_events (audit log)
 ## 3.2 Table Definitions
 
 ### `users`
-| Column | Type | Notes |
-|---|---|---|
-| id | UUID (PK) | |
-| full_name | VARCHAR | |
-| email | VARCHAR, unique | |
-| password_hash | VARCHAR | bcrypt |
-| global_role | ENUM('admin','cr','student') | |
+
+| Column              | Type                                            | Notes              |
+| ------------------- | ----------------------------------------------- | ------------------ |
+| id                  | UUID (PK)                                       |                    |
+| full_name           | VARCHAR                                         |                    |
+| email               | VARCHAR, unique                                 |                    |
+| password_hash       | VARCHAR                                         | bcrypt             |
+| global_role         | ENUM('admin','cr','student')                    |                    |
 | verification_status | ENUM('pending','approved','rejected'), nullable | applies to CR only |
-| is_active | BOOLEAN | default true |
-| created_at | TIMESTAMP | |
-| updated_at | TIMESTAMP | |
+| is_active           | BOOLEAN                                         | default true       |
+| created_at          | TIMESTAMP                                       |                    |
+| updated_at          | TIMESTAMP                                       |                    |
 
 ### `levels`
-| Column | Type | Notes |
-|---|---|---|
-| id | UUID (PK) | |
-| name | VARCHAR | e.g. "100L", "200L" |
-| created_at | TIMESTAMP | |
+
+| Column     | Type      | Notes               |
+| ---------- | --------- | ------------------- |
+| id         | UUID (PK) |                     |
+| name       | VARCHAR   | e.g. "100L", "200L" |
+| created_at | TIMESTAMP |                     |
 
 ### `level_memberships`
+
 Tracks a user's association with a level over time — handles both students and CRs, supports promotion history via soft-delete.
 
-| Column | Type | Notes |
-|---|---|---|
-| id | UUID (PK) | |
-| user_id | UUID (FK → users.id) | |
-| level_id | UUID (FK → levels.id) | |
-| role_in_level | ENUM('student','main_cr','assistant_cr') | |
-| status | ENUM('active','archived') | archived on promotion |
-| joined_at | TIMESTAMP | |
-| archived_at | TIMESTAMP, nullable | |
+| Column        | Type                                     | Notes                 |
+| ------------- | ---------------------------------------- | --------------------- |
+| id            | UUID (PK)                                |                       |
+| user_id       | UUID (FK → users.id)                     |                       |
+| level_id      | UUID (FK → levels.id)                    |                       |
+| role_in_level | ENUM('student','main_cr','assistant_cr') |                       |
+| status        | ENUM('active','archived')                | archived on promotion |
+| joined_at     | TIMESTAMP                                |                       |
+| archived_at   | TIMESTAMP, nullable                      |                       |
 
 ### `join_codes`
-| Column | Type | Notes |
-|---|---|---|
-| id | UUID (PK) | |
-| level_id | UUID (FK → levels.id) | |
-| code | VARCHAR, unique | |
-| created_by | UUID (FK → users.id) | admin or CR who generated it |
-| is_active | BOOLEAN | old code invalidated on regeneration |
-| created_at | TIMESTAMP | |
+
+| Column     | Type                  | Notes                                |
+| ---------- | --------------------- | ------------------------------------ |
+| id         | UUID (PK)             |                                      |
+| level_id   | UUID (FK → levels.id) |                                      |
+| code       | VARCHAR, unique       |                                      |
+| created_by | UUID (FK → users.id)  | admin or CR who generated it         |
+| is_active  | BOOLEAN               | old code invalidated on regeneration |
+| created_at | TIMESTAMP             |                                      |
 
 ### `academic_session_state` (singleton row)
-| Column | Type | Notes |
-|---|---|---|
-| id | UUID (PK) | single row |
-| current_semester | ENUM('1st','2nd') | |
-| current_session_year | VARCHAR | e.g. "2025/2026" |
-| updated_by | UUID (FK → users.id) | admin |
-| updated_at | TIMESTAMP | |
+
+| Column               | Type                 | Notes            |
+| -------------------- | -------------------- | ---------------- |
+| id                   | UUID (PK)            | single row       |
+| current_semester     | ENUM('1st','2nd')    |                  |
+| current_session_year | VARCHAR              | e.g. "2025/2026" |
+| updated_by           | UUID (FK → users.id) | admin            |
+| updated_at           | TIMESTAMP            |                  |
 
 ### `courses`
-| Column | Type | Notes |
-|---|---|---|
-| id | UUID (PK) | |
-| level_id | UUID (FK → levels.id) | |
-| semester | ENUM('1st','2nd') | |
-| course_code | VARCHAR | e.g. "CSC 301" |
-| course_title | VARCHAR | |
-| credit_unit | INTEGER | used by CGPA calculator |
-| created_by | UUID (FK → users.id) | admin or CR |
-| created_at | TIMESTAMP | |
+
+| Column       | Type                  | Notes                   |
+| ------------ | --------------------- | ----------------------- |
+| id           | UUID (PK)             |                         |
+| level_id     | UUID (FK → levels.id) |                         |
+| semester     | ENUM('1st','2nd')     |                         |
+| course_code  | VARCHAR               | e.g. "CSC 301"          |
+| course_title | VARCHAR               |                         |
+| credit_unit  | INTEGER               | used by CGPA calculator |
+| created_by   | UUID (FK → users.id)  | admin or CR             |
+| created_at   | TIMESTAMP             |                         |
 
 ### `posts`
-| Column | Type | Notes |
-|---|---|---|
-| id | UUID (PK) | |
-| course_id | UUID (FK → courses.id) | mandatory tag |
-| cr_id | UUID (FK → users.id) | author |
-| title | VARCHAR | |
-| content | TEXT | |
-| post_type | ENUM('assignment','test','lecture','announcement') | |
-| difficulty | ENUM('easy','medium','hard'), nullable | optional |
-| due_date | TIMESTAMP, nullable | |
-| created_at | TIMESTAMP | |
+
+| Column     | Type                                               | Notes         |
+| ---------- | -------------------------------------------------- | ------------- |
+| id         | UUID (PK)                                          |               |
+| course_id  | UUID (FK → courses.id)                             | mandatory tag |
+| cr_id      | UUID (FK → users.id)                               | author        |
+| title      | VARCHAR                                            |               |
+| content    | TEXT                                               |               |
+| post_type  | ENUM('assignment','test','lecture','announcement') |               |
+| difficulty | ENUM('easy','medium','hard'), nullable             | optional      |
+| due_date   | TIMESTAMP, nullable                                |               |
+| created_at | TIMESTAMP                                          |               |
 
 ### `comments`
-| Column | Type | Notes |
-|---|---|---|
-| id | UUID (PK) | |
-| post_id | UUID (FK → posts.id) | |
-| student_id | UUID (FK → users.id) | |
-| content | TEXT | |
-| is_read | BOOLEAN | default false, CR inbox state |
-| created_at | TIMESTAMP | |
+
+| Column     | Type                 | Notes                         |
+| ---------- | -------------------- | ----------------------------- |
+| id         | UUID (PK)            |                               |
+| post_id    | UUID (FK → posts.id) |                               |
+| student_id | UUID (FK → users.id) |                               |
+| content    | TEXT                 |                               |
+| is_read    | BOOLEAN              | default false, CR inbox state |
+| created_at | TIMESTAMP            |                               |
 
 ### `resources`
-| Column | Type | Notes |
-|---|---|---|
-| id | UUID (PK) | |
-| level_id | UUID (FK → levels.id) | |
-| semester | ENUM('1st','2nd') | |
-| course_id | UUID (FK → courses.id) | |
-| title | VARCHAR | |
-| file_url | VARCHAR | S3/Cloudinary link |
-| file_type | VARCHAR | e.g. "pdf", "docx" |
-| uploaded_by | UUID (FK → users.id) | admin or CR |
-| created_at | TIMESTAMP | |
+
+| Column      | Type                   | Notes              |
+| ----------- | ---------------------- | ------------------ |
+| id          | UUID (PK)              |                    |
+| level_id    | UUID (FK → levels.id)  |                    |
+| semester    | ENUM('1st','2nd')      |                    |
+| course_id   | UUID (FK → courses.id) |                    |
+| title       | VARCHAR                |                    |
+| file_url    | VARCHAR                | S3/Cloudinary link |
+| file_type   | VARCHAR                | e.g. "pdf", "docx" |
+| uploaded_by | UUID (FK → users.id)   | admin or CR        |
+| created_at  | TIMESTAMP              |                    |
 
 ### `itinerary_items` (personal, private)
-| Column | Type | Notes |
-|---|---|---|
-| id | UUID (PK) | |
-| student_id | UUID (FK → users.id) | |
-| title | VARCHAR | |
-| raw_input_text | TEXT | original typed input |
-| difficulty | ENUM('easy','medium','hard') | AI-suggested, student-editable |
-| scheduled_date | DATE, nullable | |
-| ai_arranged_order | INTEGER, nullable | sort order from AI planning |
-| status | ENUM('pending','done') | default pending |
-| created_at | TIMESTAMP | |
+
+| Column            | Type                         | Notes                          |
+| ----------------- | ---------------------------- | ------------------------------ |
+| id                | UUID (PK)                    |                                |
+| student_id        | UUID (FK → users.id)         |                                |
+| title             | VARCHAR                      |                                |
+| raw_input_text    | TEXT                         | original typed input           |
+| difficulty        | ENUM('easy','medium','hard') | AI-suggested, student-editable |
+| scheduled_date    | DATE, nullable               |                                |
+| ai_arranged_order | INTEGER, nullable            | sort order from AI planning    |
+| status            | ENUM('pending','done')       | default pending                |
+| created_at        | TIMESTAMP                    |                                |
 
 ### `grade_entries` (CGPA calculator)
-| Column | Type | Notes |
-|---|---|---|
-| id | UUID (PK) | |
-| student_id | UUID (FK → users.id) | |
-| course_code | VARCHAR | manually entered |
-| course_title | VARCHAR | manually entered |
-| credit_unit | INTEGER | pulled from courses table if matched, else manual |
-| grade | ENUM('A','B','C','D','E','F') | |
-| grade_point | DECIMAL | computed (e.g. A=5, B=4, C=3, D=2, E=1, F=0) |
-| semester_label | VARCHAR | e.g. "1st Semester 200L" |
-| created_at | TIMESTAMP | |
+
+| Column         | Type                          | Notes                                             |
+| -------------- | ----------------------------- | ------------------------------------------------- |
+| id             | UUID (PK)                     |                                                   |
+| student_id     | UUID (FK → users.id)          |                                                   |
+| course_code    | VARCHAR                       | manually entered                                  |
+| course_title   | VARCHAR                       | manually entered                                  |
+| credit_unit    | INTEGER                       | pulled from courses table if matched, else manual |
+| grade          | ENUM('A','B','C','D','E','F') |                                                   |
+| grade_point    | DECIMAL                       | computed (e.g. A=5, B=4, C=3, D=2, E=1, F=0)      |
+| semester_label | VARCHAR                       | e.g. "1st Semester 200L"                          |
+| created_at     | TIMESTAMP                     |                                                   |
 
 ### `promotion_events` (audit log)
-| Column | Type | Notes |
-|---|---|---|
-| id | UUID (PK) | |
-| triggered_by | UUID (FK → users.id) | admin |
-| from_session_year | VARCHAR | |
-| to_session_year | VARCHAR | |
-| created_at | TIMESTAMP | |
+
+| Column            | Type                 | Notes |
+| ----------------- | -------------------- | ----- |
+| id                | UUID (PK)            |       |
+| triggered_by      | UUID (FK → users.id) | admin |
+| from_session_year | VARCHAR              |       |
+| to_session_year   | VARCHAR              |       |
+| created_at        | TIMESTAMP            |       |
 
 ### `notifications` (delivery log)
-| Column | Type | Notes |
-|---|---|---|
-| id | UUID (PK) | |
-| user_id | UUID (FK → users.id) | recipient |
-| type | ENUM('post','comment') | |
-| reference_id | UUID | post_id or comment_id |
-| is_read | BOOLEAN | default false |
-| sent_at | TIMESTAMP | |
+
+| Column       | Type                   | Notes                 |
+| ------------ | ---------------------- | --------------------- |
+| id           | UUID (PK)              |                       |
+| user_id      | UUID (FK → users.id)   | recipient             |
+| type         | ENUM('post','comment') |                       |
+| reference_id | UUID                   | post_id or comment_id |
+| is_read      | BOOLEAN                | default false         |
+| sent_at      | TIMESTAMP              |                       |
 
 ## 3.3 Key Relationships & Rules
 

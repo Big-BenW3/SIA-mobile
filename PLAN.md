@@ -5,17 +5,17 @@ Status: UI complete against stubs. This file supersedes the drifted parts of
 
 ## 1. Locked decisions
 
-| Area | Decision |
-|---|---|
-| Brand | Midnight `#131F45` / `#0B1330`, Sora 400+700, Logo C (Cap Signal) |
-| Theme | Light + Dark via `ThemeContext` (Light/Dark/System); `theme` live proxy; never hard-code a colour; `text`↔`onPrimary` never paired (see `inverseSurface` rule in `theme.ts`) |
-| Nav | Expo Router, Stack-over-Tabs (details slide above tabs, never *are* tabs) |
-| Tabs (student) | Home · Plan · Files · Test · You |
-| Tabs (CR) | Home · Post(=Post\|Plan segments) · Files · Test · You |
-| CGPA | Lives behind Profile (both roles), not a tab |
-| CR = student | Shared bodies with `base` prop; Post tab is the only CR-exclusive surface |
-| Data | Neon Postgres (shared) + on-device personal DB (tasks, grades, goals — never synced). Native: expo-sqlite + Drizzle. Web: same API over memory (non-persistent) — expo-sqlite has no web build |
-| Icons/imagery | Drawn SVG only, zero emoji; remote Unsplash heroes with midnight fallback |
+| Area           | Decision                                                                                                                                                                                       |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Brand          | Midnight `#131F45` / `#0B1330`, Sora 400+700, Logo C (Cap Signal)                                                                                                                              |
+| Theme          | Light + Dark via `ThemeContext` (Light/Dark/System); `theme` live proxy; never hard-code a colour; `text`↔`onPrimary` never paired (see `inverseSurface` rule in `theme.ts`)                   |
+| Nav            | Expo Router, Stack-over-Tabs (details slide above tabs, never _are_ tabs)                                                                                                                      |
+| Tabs (student) | Home · Plan · Files · Test · You                                                                                                                                                               |
+| Tabs (CR)      | Home · Post(=Post\|Plan segments) · Files · Test · You                                                                                                                                         |
+| CGPA           | Lives behind Profile (both roles), not a tab                                                                                                                                                   |
+| CR = student   | Shared bodies with `base` prop; Post tab is the only CR-exclusive surface                                                                                                                      |
+| Data           | Neon Postgres (shared) + on-device personal DB (tasks, grades, goals — never synced). Native: expo-sqlite + Drizzle. Web: same API over memory (non-persistent) — expo-sqlite has no web build |
+| Icons/imagery  | Drawn SVG only, zero emoji; remote Unsplash heroes with midnight fallback                                                                                                                      |
 
 ## 2. Route map
 
@@ -36,30 +36,30 @@ app/(cr)/(tabs)/                   → index(Home) + posts(Post|Plan merge) +
 
 ## 3. Shared bodies (`components/`, both roles, `base` prop)
 
-| Component | Used by | State |
-|---|---|---|
-| `itinerary/PlannerList` | student tab, CR Post\|Plan page | `plannerStore` |
-| `itinerary/AddTask`, `TaskDetail` | both groups (thin wrappers) | `plannerStore` |
-| `post/MyPostsBody` | CR Post page | `postsStore` |
-| `test/TestHub` | both Test tabs | local funnel |
-| `test/study\|cbt\|past` | student routes; CR re-exports (back()-only) | `useBankQuestions` async loader |
-| `cgpa/CgpaOverview`, `SemesterForm`, `SemesterDetail` | both groups (thin wrappers) | `cgpaStore` |
-| `calendar/CalendarBody` | both groups (thin wrappers) | `postsStore` + `plannerStore` |
-| `test/TestSetup` (course → paper → topics) + `useBankQuestions` | shared by all modes | `questions.service` (API-first, offline fallback) |
+| Component                                                       | Used by                                     | State                                             |
+| --------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------- |
+| `itinerary/PlannerList`                                         | student tab, CR Post\|Plan page             | `plannerStore`                                    |
+| `itinerary/AddTask`, `TaskDetail`                               | both groups (thin wrappers)                 | `plannerStore`                                    |
+| `post/MyPostsBody`                                              | CR Post page                                | `postsStore`                                      |
+| `test/TestHub`                                                  | both Test tabs                              | local funnel                                      |
+| `test/study\|cbt\|past`                                         | student routes; CR re-exports (back()-only) | `useBankQuestions` async loader                   |
+| `cgpa/CgpaOverview`, `SemesterForm`, `SemesterDetail`           | both groups (thin wrappers)                 | `cgpaStore`                                       |
+| `calendar/CalendarBody`                                         | both groups (thin wrappers)                 | `postsStore` + `plannerStore`                     |
+| `test/TestSetup` (course → paper → topics) + `useBankQuestions` | shared by all modes                         | `questions.service` (API-first, offline fallback) |
 
 Role-exclusive screens: `post/[id]` detail (composer vs Edit/Delete+reply),
 `posts/new`, `posts/[id]/edit`, CR upload sheet. Everything else is shared.
 
 ## 4. Stub → backend contract
 
-| Store (now) | Endpoints (later) |
-|---|---|
-| `plannerStore` | `GET/POST /api/itinerary`, `PATCH/DELETE /api/itinerary/:id`, `POST /api/itinerary/arrange` (Groq) |
-| `postsStore` (+`draft`) | `GET /api/posts?level=`, `POST/PATCH/DELETE /api/posts…`, `GET/POST /api/posts/:id/comments`, push on publish |
-| `cgpaStore` (+`gpaFor`) | ON-DEVICE ONLY — no endpoints, ever (product decision) |
-| `authStore` | `POST /api/auth/*` (JWT + refresh), join-code validate, CR verify |
-| `notificationStore` (readIds) | FCM registration + delivery log |
-| Mocks kept direct | `MOCK_COURSES/FILES` → courses/resources endpoints; `MOCK_HEROES/SCHEDULE/ACADEMIC_STATE` → CMS/session endpoints; `data/questions` → question-bank endpoints |
+| Store (now)                   | Endpoints (later)                                                                                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `plannerStore`                | `GET/POST /api/itinerary`, `PATCH/DELETE /api/itinerary/:id`, `POST /api/itinerary/arrange` (Groq)                                                            |
+| `postsStore` (+`draft`)       | `GET /api/posts?level=`, `POST/PATCH/DELETE /api/posts…`, `GET/POST /api/posts/:id/comments`, push on publish                                                 |
+| `cgpaStore` (+`gpaFor`)       | ON-DEVICE ONLY — no endpoints, ever (product decision)                                                                                                        |
+| `authStore`                   | `POST /api/auth/*` (JWT + refresh), join-code validate, CR verify                                                                                             |
+| `notificationStore` (readIds) | FCM registration + delivery log                                                                                                                               |
+| Mocks kept direct             | `MOCK_COURSES/FILES` → courses/resources endpoints; `MOCK_HEROES/SCHEDULE/ACADEMIC_STATE` → CMS/session endpoints; `data/questions` → question-bank endpoints |
 
 Rule: screens never import fetch logic — only stores/hooks. Backend lands by
 rewriting store internals; UI stays untouched.

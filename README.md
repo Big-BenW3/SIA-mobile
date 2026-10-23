@@ -6,20 +6,20 @@ The mobile + web frontend for students and Course Reps, built with Expo so the s
 
 ## Tech Stack
 
-| Concern | Technology |
-|---|---|
-| Framework | Expo (managed workflow) + React Native |
-| Web output | React Native Web (bundled with Expo) |
-| Routing | Expo Router (file-based, tabs on mobile / responsive rail on web) |
-| Global/client state | Zustand |
-| Server state & caching | TanStack Query (React Query) |
-| Forms & validation | React Hook Form + Zod |
-| HTTP client | Axios |
-| Secure token storage | expo-secure-store |
-| Push notifications | expo-notifications (relays through Firebase Cloud Messaging) |
-| File picking | expo-document-picker (CR resource uploads) |
-| Styling | NativeWind (Tailwind for React Native) |
-| Icons | lucide-react-native |
+| Concern                | Technology                                                        |
+| ---------------------- | ----------------------------------------------------------------- |
+| Framework              | Expo (managed workflow) + React Native                            |
+| Web output             | React Native Web (bundled with Expo)                              |
+| Routing                | Expo Router (file-based, tabs on mobile / responsive rail on web) |
+| Global/client state    | Zustand                                                           |
+| Server state & caching | TanStack Query (React Query)                                      |
+| Forms & validation     | React Hook Form + Zod                                             |
+| HTTP client            | Axios                                                             |
+| Secure token storage   | expo-secure-store                                                 |
+| Push notifications     | expo-notifications (relays through Firebase Cloud Messaging)      |
+| File picking           | expo-document-picker (CR resource uploads)                        |
+| Styling                | NativeWind (Tailwind for React Native)                            |
+| Icons                  | lucide-react-native                                               |
 
 ## Features
 
@@ -56,6 +56,7 @@ npx expo start
 ```
 
 From the Expo dev server output you can:
+
 - Press `a` to open on an Android emulator
 - Press `i` to open on an iOS simulator
 - Press `w` to open in a web browser
@@ -77,15 +78,15 @@ EXPO_PUBLIC_FIREBASE_APP_ID=
 
 ## Available Scripts
 
-| Command | Description |
-|---|---|
-| `npx expo start` | Start the Expo dev server |
-| `npx expo start --web` | Start directly in web mode |
-| `npx expo start --android` | Start directly on an Android emulator/device |
-| `npx expo start --ios` | Start directly on an iOS simulator/device |
-| `eas build --platform android` | Production Android build (requires EAS setup) |
-| `eas build --platform ios` | Production iOS build (requires EAS setup) |
-| `npx expo export --platform web` | Export a static web build for hosting |
+| Command                          | Description                                   |
+| -------------------------------- | --------------------------------------------- |
+| `npx expo start`                 | Start the Expo dev server                     |
+| `npx expo start --web`           | Start directly in web mode                    |
+| `npx expo start --android`       | Start directly on an Android emulator/device  |
+| `npx expo start --ios`           | Start directly on an iOS simulator/device     |
+| `eas build --platform android`   | Production Android build (requires EAS setup) |
+| `eas build --platform ios`       | Production iOS build (requires EAS setup)     |
+| `npx expo export --platform web` | Export a static web build for hosting         |
 
 ## Project Structure
 
