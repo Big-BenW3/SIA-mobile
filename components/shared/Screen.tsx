@@ -1,11 +1,24 @@
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
-import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
-import { theme } from '@/constants/theme';
-import { themedStyles } from '@/components/themedStyles';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
+import { SafeAreaView, type Edge } from "react-native-safe-area-context";
+import { theme } from "@/constants/theme";
+import { themedStyles } from "@/components/themedStyles";
 
-export function Screen({ children, padded = true }: { children: React.ReactNode; padded?: boolean }) {
+export function Screen({
+  children,
+  padded = true,
+}: {
+  children: React.ReactNode;
+  padded?: boolean;
+}) {
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <View style={[styles.body, padded && styles.padded]}>{children}</View>
     </SafeAreaView>
   );
@@ -31,7 +44,12 @@ export function Card({
     return (
       <Pressable
         onPress={onPress}
-        style={({ pressed }) => [styles.card, style, pressed && { opacity: 0.85 }]}>
+        style={({ pressed }) => [
+          styles.card,
+          style,
+          pressed && { opacity: 0.85 },
+        ]}
+      >
         {children}
       </Pressable>
     );
@@ -46,7 +64,7 @@ export function Card({
 export function SafeScreen({
   children,
   style,
-  edges = ['top', 'bottom'],
+  edges = ["top", "bottom"],
 }: {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -59,19 +77,33 @@ export function SafeScreen({
   );
 }
 
-const styles = themedStyles(() => StyleSheet.create({
-  safe: { flex: 1, backgroundColor: theme.colors.background },
-  body: { flex: 1, backgroundColor: theme.colors.background, justifyContent:'center' },
-  padded: { padding: theme.spacing.md },
-  h1: { ...theme.type.hero, color: theme.colors.text, marginBottom: theme.spacing.xs },
-  sub: { ...theme.type.body, color: theme.colors.secondary, marginBottom: theme.spacing.md },
-  card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.lg,
-    padding: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    ...theme.shadow.card,
-    marginBottom: theme.spacing.sm,
-  },
-}));
+const styles = themedStyles(() =>
+  StyleSheet.create({
+    safe: { flex: 1, backgroundColor: theme.colors.background },
+    body: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+      justifyContent: "center",
+    },
+    padded: { padding: theme.spacing.md },
+    h1: {
+      ...theme.type.hero,
+      color: theme.colors.text,
+      marginBottom: theme.spacing.xs,
+    },
+    sub: {
+      ...theme.type.body,
+      color: theme.colors.secondary,
+      marginBottom: theme.spacing.md,
+    },
+    card: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...theme.shadow.card,
+      marginBottom: theme.spacing.sm,
+    },
+  }),
+);

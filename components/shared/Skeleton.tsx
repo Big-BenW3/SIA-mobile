@@ -1,7 +1,13 @@
-import { useEffect, useState } from 'react';
-import { Animated, Easing, StyleSheet, View, type ViewStyle } from 'react-native';
-import { theme } from '@/constants/theme';
-import { themedStyles } from '@/components/themedStyles';
+import { useEffect, useState } from "react";
+import {
+  Animated,
+  Easing,
+  StyleSheet,
+  View,
+  type ViewStyle,
+} from "react-native";
+import { theme } from "@/constants/theme";
+import { themedStyles } from "@/components/themedStyles";
 
 // ─── Skeleton loaders ──────────────────────────────────────────────
 // A placeholder that matches the SHAPE of the content it stands in for.
@@ -45,16 +51,27 @@ export function Skeleton({
 
   // Numeric output only — percentage strings cannot ride the native driver,
   // and the block measures itself on first layout.
-  const translateX = anim.interpolate({ inputRange: [0, 1], outputRange: [-measured, measured] });
+  const translateX = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-measured, measured],
+  });
 
   return (
     <View
       onLayout={(e) => setMeasured(e.nativeEvent.layout.width)}
-      style={[styles.block, { width, height, borderRadius: radius ?? height / 2 }, style]}>
+      style={[
+        styles.block,
+        { width, height, borderRadius: radius ?? height / 2 },
+        style,
+      ]}
+    >
       {measured > 0 && (
         <Animated.View
           pointerEvents="none"
-          style={[styles.sheen, { width: measured * 0.6, transform: [{ translateX }] }]}
+          style={[
+            styles.sheen,
+            { width: measured * 0.6, transform: [{ translateX }] },
+          ]}
         />
       )}
     </View>
@@ -64,7 +81,7 @@ export function Skeleton({
 /** Stacked lines standing in for a paragraph. Last line runs short. */
 export function SkeletonLines({
   lines = 3,
-  width = '100%',
+  width = "100%",
   gap = 8,
 }: {
   lines?: number;
@@ -76,7 +93,7 @@ export function SkeletonLines({
       {Array.from({ length: lines }, (_, i) => (
         <Skeleton
           key={i}
-          width={i === lines - 1 ? '62%' : width}
+          width={i === lines - 1 ? "62%" : width}
           height={i === lines - 1 ? 10 : 12}
         />
       ))}
@@ -133,7 +150,13 @@ export function RowSkeleton({ leading = 44 }: { leading?: number }) {
   );
 }
 
-export function RowListSkeleton({ count = 4, leading = 44 }: { count?: number; leading?: number }) {
+export function RowListSkeleton({
+  count = 4,
+  leading = 44,
+}: {
+  count?: number;
+  leading?: number;
+}) {
   return (
     <View style={{ gap: theme.spacing.sm }}>
       {Array.from({ length: count }, (_, i) => (
@@ -216,62 +239,83 @@ export function CalendarSkeleton() {
 }
 
 /** Generic block of content, used when no better shape is known. */
-export function BlockSkeleton({ count = 3, height = 88 }: { count?: number; height?: number }) {
+export function BlockSkeleton({
+  count = 3,
+  height = 88,
+}: {
+  count?: number;
+  height?: number;
+}) {
   return (
     <View style={{ gap: theme.spacing.sm }}>
       {Array.from({ length: count }, (_, i) => (
-        <Skeleton key={i} width="100%" height={height} radius={theme.radius.lg} />
+        <Skeleton
+          key={i}
+          width="100%"
+          height={height}
+          radius={theme.radius.lg}
+        />
       ))}
     </View>
   );
 }
 
-const styles = themedStyles(() => StyleSheet.create({
-  block: {
-    backgroundColor: theme.colors.muted,
-    overflow: 'hidden',
-  },
-  sheen: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255,255,255,0.65)',
-  },
+const styles = themedStyles(() =>
+  StyleSheet.create({
+    block: {
+      backgroundColor: theme.colors.muted,
+      overflow: "hidden",
+    },
+    sheen: {
+      position: "absolute",
+      top: 0,
+      bottom: 0,
+      backgroundColor: "rgba(255,255,255,0.65)",
+    },
 
-  post: {
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.lg,
-    padding: theme.spacing.md,
-    gap: 10,
-  },
-  postTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  postFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    post: {
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.md,
+      gap: 10,
+    },
+    postTop: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    postFoot: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
 
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.lg,
-    padding: theme.spacing.sm,
-    minHeight: theme.layout.rowMinHeight,
-  },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.sm,
+      minHeight: theme.layout.rowMinHeight,
+    },
 
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.lg,
-    padding: theme.spacing.sm,
-    minHeight: theme.layout.rowMinHeight,
-  },
+    card: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: theme.radius.lg,
+      padding: theme.spacing.sm,
+      minHeight: theme.layout.rowMinHeight,
+    },
 
-  calGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-}));
+    calGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  }),
+);

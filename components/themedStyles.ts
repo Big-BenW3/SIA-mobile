@@ -1,4 +1,9 @@
-import { StyleSheet, type ImageStyle, type TextStyle, type ViewStyle } from 'react-native';
+import {
+  StyleSheet,
+  type ImageStyle,
+  type TextStyle,
+  type ViewStyle,
+} from "react-native";
 
 // ─── Themed styles ─────────────────────────────────────────────────
 // Screens build their StyleSheet at module scope from the design tokens:
@@ -15,13 +20,16 @@ export function themedStyles<T extends object>(factory: () => T): T {
 
   const resolve = (): T => {
     if (!sheet) {
-      sheet = StyleSheet.create(factory() as Record<string, ViewStyle | TextStyle | ImageStyle>) as unknown as T;
+      sheet = StyleSheet.create(
+        factory() as Record<string, ViewStyle | TextStyle | ImageStyle>,
+      ) as unknown as T;
     }
     return sheet;
   };
 
   return new Proxy({} as T, {
-    get: (_target, prop) => (resolve() as Record<string | symbol, unknown>)[prop],
+    get: (_target, prop) =>
+      (resolve() as Record<string | symbol, unknown>)[prop],
     has: (_target, prop) => Reflect.has(resolve() as object, prop),
     ownKeys: () => Reflect.ownKeys(resolve() as object),
     getOwnPropertyDescriptor: (_target, prop) =>

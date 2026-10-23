@@ -1,5 +1,5 @@
-import Svg, { Circle, G, Path, Polygon } from 'react-native-svg';
-import { theme } from '@/constants/theme';
+import Svg, { Circle, G, Path, Polygon } from "react-native-svg";
+import { theme } from "@/constants/theme";
 
 // Brand marks for SIA (Student Itinerary App).
 // Goal recap: one trusted home per level (100L–500L) where verified CR
@@ -12,7 +12,7 @@ const BLUE_DARK = theme.colors.primaryDark; // #152B66
 const BLUE_PALE = theme.colors.primaryMuted; // #B9C9EC
 const INK = theme.colors.text;
 
-export type LogoChoice = 'A' | 'B' | 'C';
+export type LogoChoice = "A" | "B" | "C";
 
 /* ————————————————————————————————————————————————————————————————
    CONCEPT A — "Verified Check"
@@ -23,7 +23,10 @@ export type LogoChoice = 'A' | 'B' | 'C';
 export function LogoA({ size = 120 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 120 120">
-      <Path d="M22 8h76a14 14 0 0 1 14 14v76a14 14 0 0 1-14 14H22A14 14 0 0 1 8 98V22A14 14 0 0 1 22 8z" fill={BLUE} />
+      <Path
+        d="M22 8h76a14 14 0 0 1 14 14v76a14 14 0 0 1-14 14H22A14 14 0 0 1 8 98V22A14 14 0 0 1 22 8z"
+        fill={BLUE}
+      />
       <Path
         d="M38 62l14 14 30-34"
         fill="none"
@@ -59,7 +62,14 @@ export function LogoB({ size = 120 }: { size?: number }) {
       <Circle cx={62} cy={66} r={11} fill={BLUE} />
       <G>
         <Circle cx={94} cy={34} r={15} fill={BLUE_DARK} />
-        <Path d="M87 34l5 5 9-10" fill="none" stroke="#fff" strokeWidth={4.5} strokeLinecap="round" strokeLinejoin="round" />
+        <Path
+          d="M87 34l5 5 9-10"
+          fill="none"
+          stroke="#fff"
+          strokeWidth={4.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </G>
     </Svg>
   );
@@ -75,22 +85,45 @@ export function LogoC({ size = 120 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 120 120">
       {/* signal arcs above the cap */}
-      <Path d="M38 34a32 32 0 0 1 44 0" fill="none" stroke={BLUE_PALE} strokeWidth={7} strokeLinecap="round" />
-      <Path d="M48 24a18 18 0 0 1 24 0" fill="none" stroke={BLUE} strokeWidth={7} strokeLinecap="round" />
+      <Path
+        d="M38 34a32 32 0 0 1 44 0"
+        fill="none"
+        stroke={BLUE_PALE}
+        strokeWidth={7}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M48 24a18 18 0 0 1 24 0"
+        fill="none"
+        stroke={BLUE}
+        strokeWidth={7}
+        strokeLinecap="round"
+      />
       {/* mortarboard */}
       <Polygon points="60,52 104,70 60,88 16,70" fill={BLUE} />
       {/* head + tassel */}
       <Path d="M40 78v10c0 9 40 9 40 0V78l-20 9z" fill={BLUE_DARK} />
-      <Path d="M100 71v18" stroke={BLUE_DARK} strokeWidth={5} strokeLinecap="round" />
+      <Path
+        d="M100 71v18"
+        stroke={BLUE_DARK}
+        strokeWidth={5}
+        strokeLinecap="round"
+      />
       <Circle cx={100} cy={93} r={6} fill={BLUE_DARK} />
     </Svg>
   );
 }
 
 /** Render the chosen mark (or nothing) at small sizes, e.g. the header. */
-export function LogoMark({ choice, size = 36 }: { choice: LogoChoice | null; size?: number }) {
-  if (choice === 'A') return <LogoA size={size} />;
-  if (choice === 'B') return <LogoB size={size} />;
-  if (choice === 'C') return <LogoC size={size} />;
+export function LogoMark({
+  choice,
+  size = 36,
+}: {
+  choice: LogoChoice | null;
+  size?: number;
+}) {
+  if (choice === "A") return <LogoA size={size} />;
+  if (choice === "B") return <LogoB size={size} />;
+  if (choice === "C") return <LogoC size={size} />;
   return null;
 }
