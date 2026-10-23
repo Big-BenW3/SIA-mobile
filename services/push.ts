@@ -5,20 +5,20 @@
 // require() only, guarded by appOwnership + try/catch. Returns null
 // in Expo Go / simulators / missing credentials; app works fully
 // except remote buzz.
-import * as Device from 'expo-device';
-import Constants from 'expo-constants';
-import { Platform } from 'react-native';
+import * as Device from "expo-device";
+import Constants from "expo-constants";
+import { Platform } from "react-native";
 
-type NotificationsModule = typeof import('expo-notifications');
+type NotificationsModule = typeof import("expo-notifications");
 
 let handlerSet = false;
 
 function getNotifications(): NotificationsModule | null {
   try {
     // Expo Go has no remote-push native module — bail before require.
-    if (Constants.appOwnership === 'expo') return null;
+    if (Constants.appOwnership === "expo") return null;
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require('expo-notifications') as NotificationsModule;
+    const mod = require("expo-notifications") as NotificationsModule;
     return mod ?? null;
   } catch {
     return null;
@@ -51,11 +51,13 @@ export async function registerPushToken(): Promise<string | null> {
     ensureHandler(Notifications);
     const { status: existing } = await Notifications.getPermissionsAsync();
     const status =
-      existing === 'granted' ? existing : (await Notifications.requestPermissionsAsync()).status;
-    if (status !== 'granted') return null;
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'default',
+      existing === "granted"
+        ? existing
+        : (await Notifications.requestPermissionsAsync()).status;
+    if (status !== "granted") return null;
+    if (Platform.OS === "android") {
+      await Notifications.setNotificationChannelAsync("default", {
+        name: "default",
         importance: Notifications.AndroidImportance.DEFAULT,
       });
     }

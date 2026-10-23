@@ -1,16 +1,16 @@
-import * as SQLite from 'expo-sqlite';
-import { asc, eq } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/expo-sqlite';
-import { goals, gradeRows, meta, semesters, tasks } from './schema';
-import { uid } from './uid';
-import type { Difficulty, Grade, SemesterEntry } from '@/types';
-import type { Goal } from '@/stores/goalsStore';
+import * as SQLite from "expo-sqlite";
+import { asc, eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/expo-sqlite";
+import { goals, gradeRows, meta, semesters, tasks } from "./schema";
+import { uid } from "./uid";
+import type { Difficulty, Grade, SemesterEntry } from "@/types";
+import type { Goal } from "@/stores/goalsStore";
 
 // ─── Personal backend: native (SQLite via Drizzle) ──────────────────
 // Synchronous throughout: stores keep sync signatures, the UI never
 // awaits the database. Tables created idempotently at import.
 
-const sqlite = SQLite.openDatabaseSync('sia.db');
+const sqlite = SQLite.openDatabaseSync("sia.db");
 const pdb = drizzle(sqlite);
 
 sqlite.execSync(`
@@ -52,16 +52,28 @@ export function listTasks() {
       title: r.title,
       difficulty: r.difficulty as Difficulty,
       scheduledDate: r.scheduledDate,
-      status: (r.status === 'done' ? 'done' : 'pending') as 'pending' | 'done',
+      status: (r.status === "done" ? "done" : "pending") as "pending" | "done",
       serverId: r.serverId,
     }));
 }
 
-export function insertTask(input: { title: string; difficulty: Difficulty; scheduledDate: string | null }) {
-  const id = uid('t');
+export function insertTask(input: {
+  title: string;
+  difficulty: Difficulty;
+  scheduledDate: string | null;
+}) {
+  const id = uid("t");
   pdb
     .insert(tasks)
-    .values({ id, title: input.title, difficulty: input.difficulty, scheduledDate: input.scheduledDate, status: 'pending', serverId: null, createdAt: Date.now() })
+    .values({
+      id,
+      title: input.title,
+      difficulty: input.difficulty,
+      scheduledDate: input.scheduledDate,
+      status: "pending",
+      serverId: null,
+      createdAt: Date.now(),
+    })
     .run();
   return id;
 }
@@ -70,7 +82,15 @@ export function setTaskServerId(id: string, serverId: string): void {
   pdb.update(tasks).set({ serverId }).where(eq(tasks.id, id)).run();
 }
 
-export function updateTaskDb(id: string, patch: { title?: string; difficulty?: Difficulty; scheduledDate?: string | null; status?: 'pending' | 'done' }): void {
+export function updateTaskDb(
+  id: string,
+  patch: {
+    title?: string;
+    difficulty?: Difficulty;
+    scheduledDate?: string | null;
+    status?: "pending" | "done";
+  },
+): void {
   pdb.update(tasks).set(patch).where(eq(tasks.id, id)).run();
 }
 
@@ -94,15 +114,34 @@ export function listSemesters(): SemesterEntry[] {
         .from(gradeRows)
         .where(eq(gradeRows.semesterId, s.id))
         .all()
-        .map((r) => ({ code: r.code, title: r.title, creditUnit: r.units, grade: r.grade as Grade })),
+        .map((r) => ({
+          code: r.code,
+          title: r.title,
+          creditUnit: r.units,
+          grade: r.grade as Grade,
+        })),
     }));
 }
 
-export function insertSemester(label: string, gpa: number, courses: { code: string; title: string; creditUnit: number; grade: Grade }[]): string {
-  const id = uid('s');
+export function insertSemester(
+  label: string,
+  gpa: number,
+  courses: { code: string; title: string; creditUnit: number; grade: Grade }[],
+): string {
+  const id = uid("s");
   pdb.insert(semesters).values({ id, label, gpa, createdAt: Date.now() }).run();
   for (const c of courses) {
-    pdb.insert(gradeRows).values({ id: uid('g'), semesterId: id, code: c.code, title: c.title, units: c.creditUnit, grade: c.grade }).run();
+    pdb
+      .insert(gradeRows)
+      .values({
+        id: uid("g"),
+        semesterId: id,
+        code: c.code,
+        title: c.title,
+        units: c.creditUnit,
+        grade: c.grade,
+      })
+      .run();
   }
   return id;
 }
@@ -123,8 +162,11 @@ export function listGoals(): Goal[] {
 }
 
 export function insertGoal(title: string, detail: string): string {
-  const id = uid('goal');
-  pdb.insert(goals).values({ id, title, detail, pct: 0, createdAt: Date.now() }).run();
+  const id = uid("goal");
+  pdb
+    .insert(goals)
+    .values({ id, title, detail, pct: 0, createdAt: Date.now() })
+    .run();
   return id;
 }
 
@@ -143,5 +185,9 @@ export function metaSet(key: string, value: string | null): void {
     pdb.delete(meta).where(eq(meta.key, key)).run();
     return;
   }
-  pdb.insert(meta).values({ key, value }).onConflictDoUpdate({ target: meta.key, set: { value } }).run();
+  pdb
+    .insert(meta)
+    .values({ key, value })
+    .onConflictDoUpdate({ target: meta.key, set: { value } })
+    .run();
 }

@@ -2,19 +2,19 @@ import {
   Sora_400Regular,
   Sora_700Bold,
   useFonts,
-} from '@expo-google-fonts/sora';
-import { Stack, useRouter, useSegments } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useAuthStore } from '@/stores/authStore';
-import { useSessionStore } from '@/stores/sessionStore';
-import { usePostsStore } from '@/stores/postsStore';
-import { useNotificationStore } from '@/stores/appStores';
-import { sessionApi } from '@/services/session.service';
-import { registerPushToken } from '@/services/push';
-import { NotificationPanel } from '@/components/shared/NotificationPanel';
-import { theme } from '@/constants/theme';
+} from "@expo-google-fonts/sora";
+import { Stack, useRouter, useSegments } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useAuthStore } from "@/stores/authStore";
+import { useSessionStore } from "@/stores/sessionStore";
+import { usePostsStore } from "@/stores/postsStore";
+import { useNotificationStore } from "@/stores/appStores";
+import { sessionApi } from "@/services/session.service";
+import { registerPushToken } from "@/services/push";
+import { NotificationPanel } from "@/components/shared/NotificationPanel";
+import { theme } from "@/constants/theme";
 
 SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
@@ -74,23 +74,31 @@ function AuthGate() {
   }, [user]);
 
   useEffect(() => {
-    const inAuth = segments[0] === '(auth)';
+    const inAuth = segments[0] === "(auth)";
     const screen = segments[1];
     if (!user && pendingLevel) {
-      if (screen !== 'pending-approval') router.replace('/(auth)/pending-approval' as never);
+      if (screen !== "pending-approval")
+        router.replace("/(auth)/pending-approval" as never);
       return;
     }
     if (!user && !hasOnboarded) {
-      if (screen !== 'onboarding') router.replace('/(auth)/onboarding' as never);
+      if (screen !== "onboarding")
+        router.replace("/(auth)/onboarding" as never);
       return;
     }
-    if (!user && !inAuth) router.replace('/(auth)/welcome' as never);
-    if (user && inAuth) router.replace((user.role === 'cr' ? '/(cr)' : '/(student)') as never);
+    if (!user && !inAuth) router.replace("/(auth)/welcome" as never);
+    if (user && inAuth)
+      router.replace((user.role === "cr" ? "/(cr)" : "/(student)") as never);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, pendingLevel, hasOnboarded, segments]);
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.surface } }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: theme.colors.surface },
+      }}
+    >
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(student)" />
       <Stack.Screen name="(cr)" />

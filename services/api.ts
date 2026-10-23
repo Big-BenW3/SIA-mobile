@@ -1,4 +1,4 @@
-import { metaGet, metaSet } from '@/db/personal';
+import { metaGet, metaSet } from "@/db/personal";
 
 // ─── API client (real backend, no stubs) ────────────────────────────
 // Base URL comes from EXPO_PUBLIC_API_URL (.env, dev + EAS profiles).
@@ -7,7 +7,8 @@ import { metaGet, metaSet } from '@/db/personal';
 
 // `||`, not `??`: an empty EXPO_PUBLIC_API_URL must fall back rather than
 // resolve to '' and turn every request into a relative URL.
-export const API_BASE: string = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+export const API_BASE: string =
+  process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
 
 export class ApiError extends Error {
   status: number;
@@ -29,43 +30,49 @@ function writeToken(key: string, value: string | null): void {
 }
 
 export function getAccessToken(): string | null {
-  if (accessCache === undefined) accessCache = readToken('accessToken');
+  if (accessCache === undefined) accessCache = readToken("accessToken");
   return accessCache;
 }
 
 export function getRefreshToken(): string | null {
-  if (refreshCache === undefined) refreshCache = readToken('refreshToken');
+  if (refreshCache === undefined) refreshCache = readToken("refreshToken");
   return refreshCache;
 }
 
 export function saveTokens(access: string, refresh: string): void {
   accessCache = access;
   refreshCache = refresh;
-  writeToken('accessToken', access);
-  writeToken('refreshToken', refresh);
+  writeToken("accessToken", access);
+  writeToken("refreshToken", refresh);
 }
 
 export function clearTokens(): void {
   accessCache = null;
   refreshCache = null;
-  writeToken('accessToken', null);
-  writeToken('refreshToken', null);
+  writeToken("accessToken", null);
+  writeToken("refreshToken", null);
 }
 
 interface Options {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: unknown;
   auth?: boolean;
 }
 
-async function request<T>(path: string, opts: Options = {}, retried = false): Promise<T> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+async function request<T>(
+  path: string,
+  opts: Options = {},
+  retried = false,
+): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
   if (opts.auth !== false) {
     const token = getAccessToken();
     if (token) headers.Authorization = `Bearer ${token}`;
   }
   const res = await fetch(`${API_BASE}${path}`, {
-    method: opts.method ?? 'GET',
+    method: opts.method ?? "GET",
     headers,
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });
@@ -75,19 +82,19 @@ async function request<T>(path: string, opts: Options = {}, retried = false): Pr
     const refresh = getRefreshToken();
     if (refresh) {
       const r = await fetch(`${API_BASE}/api/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken: refresh }),
       });
       if (r.ok) {
         const data = (await r.json()) as { accessToken: string };
         accessCache = data.accessToken;
-        writeToken('accessToken', data.accessToken);
+        writeToken("accessToken", data.accessToken);
         return request<T>(path, opts, true);
       }
     }
     clearTokens();
-    throw new ApiError(401, 'Session expired. Log in again.');
+    throw new ApiError(401, "Session expired. Log in again.");
   }
 
   if (!res.ok) {
@@ -106,7 +113,9 @@ async function request<T>(path: string, opts: Options = {}, retried = false): Pr
 
 export const api = {
   get: <T>(path: string) => request<T>(path),
-  post: <T>(path: string, body?: unknown) => request<T>(path, { method: 'POST', body }),
-  patch: <T>(path: string, body?: unknown) => request<T>(path, { method: 'PATCH', body }),
-  del: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  post: <T>(path: string, body?: unknown) =>
+    request<T>(path, { method: "POST", body }),
+  patch: <T>(path: string, body?: unknown) =>
+    request<T>(path, { method: "PATCH", body }),
+  del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };

@@ -1,6 +1,6 @@
-import { API_BASE, api, getAccessToken } from './api';
-import type { Difficulty, Post, PostType } from '@/types';
-import type { Comment } from '@/types';
+import { API_BASE, api, getAccessToken } from "./api";
+import type { Difficulty, Post, PostType } from "@/types";
+import type { Comment } from "@/types";
 
 // ─── Posts + comments service (real API) ────────────────────────────
 // Backend returns ISO dates; the app formats countdowns from them.
@@ -22,7 +22,7 @@ export interface NewPostInput {
 
 export const postsApi = {
   list(levelId?: string): Promise<PostDto[]> {
-    const q = levelId ? `?levelId=${encodeURIComponent(levelId)}` : '';
+    const q = levelId ? `?levelId=${encodeURIComponent(levelId)}` : "";
     return api.get<PostDto[]>(`/api/posts${q}`);
   },
   detail(id: string): Promise<PostDto> {
@@ -31,21 +31,25 @@ export const postsApi = {
   async create(input: NewPostInput): Promise<PostDto> {
     if (!input.file) {
       const { file: _drop, ...json } = input;
-      return api.post<PostDto>('/api/posts', json);
+      return api.post<PostDto>("/api/posts", json);
     }
     // Multipart path: mirrors the resources upload helper.
 
     const form = new FormData();
-    form.append('courseId', input.courseId);
-    form.append('title', input.title);
-    form.append('content', input.content);
-    form.append('postType', input.postType);
-    if (input.difficulty) form.append('difficulty', input.difficulty);
-    if (input.dueDate) form.append('dueDate', input.dueDate);
-    form.append('file', { uri: input.file.uri, name: input.file.name, type: input.file.mimeType } as unknown as Blob);
+    form.append("courseId", input.courseId);
+    form.append("title", input.title);
+    form.append("content", input.content);
+    form.append("postType", input.postType);
+    if (input.difficulty) form.append("difficulty", input.difficulty);
+    if (input.dueDate) form.append("dueDate", input.dueDate);
+    form.append("file", {
+      uri: input.file.uri,
+      name: input.file.name,
+      type: input.file.mimeType,
+    } as unknown as Blob);
     const token = getAccessToken();
     const res = await fetch(`${API_BASE}/api/posts`, {
-      method: 'POST',
+      method: "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: form,
     });
@@ -57,12 +61,20 @@ export const postsApi = {
       } catch {
         // keep generic
       }
-      const { ApiError } = await import('./api');
+      const { ApiError } = await import("./api");
       throw new ApiError(res.status, message);
     }
     return (await res.json()) as PostDto;
   },
-  update(id: string, patch: { title?: string; content?: string; difficulty?: Difficulty | null; dueDate?: string | null }): Promise<PostDto> {
+  update(
+    id: string,
+    patch: {
+      title?: string;
+      content?: string;
+      difficulty?: Difficulty | null;
+      dueDate?: string | null;
+    },
+  ): Promise<PostDto> {
     return api.patch<PostDto>(`/api/posts/${id}`, patch);
   },
   remove(id: string): Promise<{ ok: boolean }> {

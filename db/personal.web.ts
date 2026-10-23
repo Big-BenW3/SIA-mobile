@@ -1,6 +1,6 @@
-import { uid } from './uid';
-import type { Difficulty, Grade, SemesterEntry } from '@/types';
-import type { Goal } from '@/stores/goalsStore';
+import { uid } from "./uid";
+import type { Difficulty, Grade, SemesterEntry } from "@/types";
+import type { Goal } from "@/stores/goalsStore";
 
 // ─── Personal backend: web (in-memory) ──────────────────────────────
 // expo-sqlite has no working web build, so the web app runs the same
@@ -30,14 +30,24 @@ export function listTasks() {
     title: r.title as string,
     difficulty: r.difficulty as Difficulty,
     scheduledDate: (r.scheduledDate ?? null) as string | null,
-    status: (r.status === 'done' ? 'done' : 'pending') as 'pending' | 'done',
+    status: (r.status === "done" ? "done" : "pending") as "pending" | "done",
     serverId: (r.serverId ?? null) as string | null,
   }));
 }
 
-export function insertTask(input: { title: string; difficulty: Difficulty; scheduledDate: string | null }): string {
-  const id = uid('t');
-  tables.tasks.set(id, { id, ...input, status: 'pending', serverId: null, createdAt: Date.now() });
+export function insertTask(input: {
+  title: string;
+  difficulty: Difficulty;
+  scheduledDate: string | null;
+}): string {
+  const id = uid("t");
+  tables.tasks.set(id, {
+    id,
+    ...input,
+    status: "pending",
+    serverId: null,
+    createdAt: Date.now(),
+  });
   return id;
 }
 
@@ -46,7 +56,15 @@ export function setTaskServerId(id: string, serverId: string): void {
   if (row) row.serverId = serverId;
 }
 
-export function updateTaskDb(id: string, patch: { title?: string; difficulty?: Difficulty; scheduledDate?: string | null; status?: 'pending' | 'done' }): void {
+export function updateTaskDb(
+  id: string,
+  patch: {
+    title?: string;
+    difficulty?: Difficulty;
+    scheduledDate?: string | null;
+    status?: "pending" | "done";
+  },
+): void {
   const row = tables.tasks.get(id);
   if (row) Object.assign(row, patch);
 }
@@ -63,16 +81,32 @@ export function listSemesters(): SemesterEntry[] {
     gpa: s.gpa as number,
     courses: [...tables.gradeRows.values()]
       .filter((r) => r.semesterId === s.id)
-      .map((r) => ({ code: r.code as string, title: r.title as string, creditUnit: r.units as number, grade: r.grade as Grade })),
+      .map((r) => ({
+        code: r.code as string,
+        title: r.title as string,
+        creditUnit: r.units as number,
+        grade: r.grade as Grade,
+      })),
   }));
 }
 
-export function insertSemester(label: string, gpa: number, courses: { code: string; title: string; creditUnit: number; grade: Grade }[]): string {
-  const id = uid('s');
+export function insertSemester(
+  label: string,
+  gpa: number,
+  courses: { code: string; title: string; creditUnit: number; grade: Grade }[],
+): string {
+  const id = uid("s");
   tables.semesters.set(id, { id, label, gpa, createdAt: Date.now() });
   for (const c of courses) {
-    const gid = uid('g');
-    tables.gradeRows.set(gid, { id: gid, semesterId: id, code: c.code, title: c.title, units: c.creditUnit, grade: c.grade });
+    const gid = uid("g");
+    tables.gradeRows.set(gid, {
+      id: gid,
+      semesterId: id,
+      code: c.code,
+      title: c.title,
+      units: c.creditUnit,
+      grade: c.grade,
+    });
   }
   return id;
 }
@@ -86,11 +120,18 @@ export function deleteSemesterDb(id: string): void {
 
 // ── goals ──
 export function listGoals(): Goal[] {
-  return [...tables.goals.values()].sort(byCreated).map((r) => ({ id: r.id as string, title: r.title as string, detail: r.detail as string, pct: r.pct as number }));
+  return [...tables.goals.values()]
+    .sort(byCreated)
+    .map((r) => ({
+      id: r.id as string,
+      title: r.title as string,
+      detail: r.detail as string,
+      pct: r.pct as number,
+    }));
 }
 
 export function insertGoal(title: string, detail: string): string {
-  const id = uid('goal');
+  const id = uid("goal");
   tables.goals.set(id, { id, title, detail, pct: 0, createdAt: Date.now() });
   return id;
 }

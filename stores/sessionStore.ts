@@ -1,6 +1,13 @@
-import { create } from 'zustand';
-import { sessionApi, type CalendarEventDto, type CourseDto, type ResourceDto, type SemesterStateDto, type WeekDto } from '@/services/session.service';
-import { ApiError } from '@/services/api';
+import { create } from "zustand";
+import {
+  sessionApi,
+  type CalendarEventDto,
+  type CourseDto,
+  type ResourceDto,
+  type SemesterStateDto,
+  type WeekDto,
+} from "@/services/session.service";
+import { ApiError } from "@/services/api";
 
 // ─── Session store (real backend, read-only app data) ───────────────
 // Levels, courses, semester, calendar and resources load once per login
@@ -17,7 +24,7 @@ interface SessionState {
   events: CalendarEventDto[];
   courses: CourseDto[];
   resources: ResourceDto[];
-  status: 'idle' | 'loading' | 'error';
+  status: "idle" | "loading" | "error";
   error: string;
   load: () => Promise<void>;
   /** Reload just the file list (after upload/delete) without full session. */
@@ -28,8 +35,8 @@ interface SessionState {
 const initial = {
   levelId: null as string | null,
   levelName: null as string | null,
-  semester: '',
-  sessionYear: '',
+  semester: "",
+  sessionYear: "",
   week: null as WeekDto | null,
   events: [] as CalendarEventDto[],
   courses: [] as CourseDto[],
@@ -38,15 +45,17 @@ const initial = {
 
 export const useSessionStore = create<SessionState>((set, get) => ({
   ...initial,
-  status: 'idle',
-  error: '',
+  status: "idle",
+  error: "",
 
-  load: async () => {    set({ status: 'loading', error: '' });
+  load: async () => {
+    set({ status: "loading", error: "" });
     try {
       const me = await sessionApi.me();
       const levels = await sessionApi.levels();
-      const level = levels.find((l) => l.name === (me.level ?? '')) ?? levels[0];
-      if (!level) throw new ApiError(404, 'No levels are set up yet.');
+      const level =
+        levels.find((l) => l.name === (me.level ?? "")) ?? levels[0];
+      if (!level) throw new ApiError(404, "No levels are set up yet.");
       const sem = await sessionApi.semester();
       const [courses, resources, week, events] = await Promise.all([
         sessionApi.courses(level.id, sem.currentSemester),
@@ -63,14 +72,20 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         events,
         courses,
         resources,
-        status: 'idle',
+        status: "idle",
       });
     } catch (err) {
-      set({ status: 'error', error: err instanceof ApiError ? err.message : 'Could not load your level. Check your connection.' });
+      set({
+        status: "error",
+        error:
+          err instanceof ApiError
+            ? err.message
+            : "Could not load your level. Check your connection.",
+      });
     }
   },
 
-  reset: () => set({ ...initial, status: 'idle', error: '' }),
+  reset: () => set({ ...initial, status: "idle", error: "" }),
 
   refreshResources: async () => {
     const { levelId, semester } = get();

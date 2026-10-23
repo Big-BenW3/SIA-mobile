@@ -1,8 +1,8 @@
-export type Role = 'student' | 'cr';
-export type RoleInLevel = 'student' | 'main_cr' | 'assistant_cr';
-export type PostType = 'assignment' | 'test' | 'lecture' | 'announcement';
-export type Difficulty = 'easy' | 'medium' | 'hard';
-export type Grade = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+export type Role = "student" | "cr";
+export type RoleInLevel = "student" | "main_cr" | "assistant_cr";
+export type PostType = "assignment" | "test" | "lecture" | "announcement";
+export type Difficulty = "easy" | "medium" | "hard";
+export type Grade = "A" | "B" | "C" | "D" | "E" | "F";
 
 export interface User {
   id: string;
@@ -51,7 +51,7 @@ export interface ItineraryItem {
   title: string;
   difficulty: Difficulty;
   scheduledDate: string | null;
-  status: 'pending' | 'done';
+  status: "pending" | "done";
   /** Backend mirror row (for AI arrange); null until synced. */
   serverId?: string | null;
 }
@@ -60,7 +60,7 @@ export interface ResourceFile {
   id: string;
   courseId: string;
   title: string;
-  fileType: 'pdf' | 'docx' | 'ppt' | 'zip';
+  fileType: "pdf" | "docx" | "ppt" | "zip";
   uploadedAt: string;
   mine?: boolean;
 }
@@ -84,7 +84,7 @@ export interface AppNotification {
 // ── Test (Study / CBT / Past Questions) ─────────────────────────────
 // The three practice modes share one funnel: course → year → topics →
 // questions. A mode only changes how step four is presented.
-export type TestMode = 'study' | 'cbt' | 'past';
+export type TestMode = "study" | "cbt" | "past";
 
 export interface Question {
   id: string;

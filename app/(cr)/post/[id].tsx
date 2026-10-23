@@ -1,16 +1,29 @@
-import { useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { AppHeader } from '@/components/shared/AppHeader';
-import { CourseTag, DifficultyDot, PostTypeChip } from '@/components/shared/Chips';
-import { Button } from '@/components/shared/Button';
-import { Card } from '@/components/shared/Screen';
-import { ErrorState, LoadingState } from '@/components/shared/States';
-import { usePostsStore } from '@/stores/postsStore';
-import { useSessionStore } from '@/stores/sessionStore';
-import { theme } from '@/constants/theme';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { themedStyles } from '@/components/themedStyles';
+import { useEffect, useState } from "react";
+import {
+  Alert,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { AppHeader } from "@/components/shared/AppHeader";
+import {
+  CourseTag,
+  DifficultyDot,
+  PostTypeChip,
+} from "@/components/shared/Chips";
+import { Button } from "@/components/shared/Button";
+import { Card } from "@/components/shared/Screen";
+import { ErrorState, LoadingState } from "@/components/shared/States";
+import { usePostsStore } from "@/stores/postsStore";
+import { useSessionStore } from "@/stores/sessionStore";
+import { theme } from "@/constants/theme";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { themedStyles } from "@/components/themedStyles";
 
 // ─── CR PostDetail ──────────────────────────────────────────────────
 // Same store as the student view, CR affordances on top: Edit/Delete,
@@ -20,15 +33,23 @@ import { themedStyles } from '@/components/themedStyles';
 export default function CRPostDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { posts, comments, addComment, deletePost, loadComments, load, status } = usePostsStore();
-  const [reply, setReply] = useState('');
-  const [replyError, setReplyError] = useState('');
+  const {
+    posts,
+    comments,
+    addComment,
+    deletePost,
+    loadComments,
+    load,
+    status,
+  } = usePostsStore();
+  const [reply, setReply] = useState("");
+  const [replyError, setReplyError] = useState("");
   const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState('');
+  const [deleteError, setDeleteError] = useState("");
 
   // Cold deep-link: feed may be empty before first load finishes.
   useEffect(() => {
-    if (posts.length === 0 && status === 'idle') {
+    if (posts.length === 0 && status === "idle") {
       const levelId = useSessionStore.getState().levelId ?? undefined;
       load(levelId);
     }
@@ -40,9 +61,12 @@ export default function CRPostDetail() {
 
   const post = posts.find((p) => p.id === id);
 
-  if (status === 'loading' && !post) {
+  if (status === "loading" && !post) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.surface }} edges={['top', 'bottom']}>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: theme.colors.surface }}
+        edges={["top", "bottom"]}
+      >
         <AppHeader title="Post · CR" showBack />
         <LoadingState variant="detail" message="Loading post…" />
       </SafeAreaView>
@@ -51,9 +75,17 @@ export default function CRPostDetail() {
 
   if (!post) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.surface }} edges={['top', 'bottom']}>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: theme.colors.surface }}
+        edges={["top", "bottom"]}
+      >
         <AppHeader title="Post · CR" showBack />
-        <ErrorState title="Post not found" message="This update may have been deleted." actionLabel="Back to posts" onAction={() => router.back()} />
+        <ErrorState
+          title="Post not found"
+          message="This update may have been deleted."
+          actionLabel="Back to posts"
+          onAction={() => router.back()}
+        />
       </SafeAreaView>
     );
   }
@@ -61,20 +93,22 @@ export default function CRPostDetail() {
   const thread = comments[post.id] ?? [];
 
   const remove = () =>
-    Alert.alert('Delete post?', 'Everyone in the level loses this update.', [
-      { text: 'Keep' },
+    Alert.alert("Delete post?", "Everyone in the level loses this update.", [
+      { text: "Keep" },
       {
-        text: 'Delete',
-        style: 'destructive',
+        text: "Delete",
+        style: "destructive",
         onPress: async () => {
-          setDeleteError('');
+          setDeleteError("");
           setDeleting(true);
           try {
             await deletePost(post.id);
             router.back();
           } catch {
             setDeleting(false);
-            setDeleteError('Could not delete. Check your connection and retry.');
+            setDeleteError(
+              "Could not delete. Check your connection and retry.",
+            );
           }
         },
       },
@@ -82,42 +116,68 @@ export default function CRPostDetail() {
 
   const sendReply = async () => {
     if (!reply.trim()) return;
-    setReplyError('');
+    setReplyError("");
     try {
       await addComment(post.id, reply.trim());
-      setReply('');
+      setReply("");
     } catch {
-      setReplyError('Could not send. Check your connection and retry.');
+      setReplyError("Could not send. Check your connection and retry.");
     }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.surface }} edges={['top', 'bottom']}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: theme.colors.surface }}
+      edges={["top", "bottom"]}
+    >
       <AppHeader title="Post · CR" showBack />
       <ScrollView contentContainerStyle={{ padding: theme.spacing.md }}>
         <Card>
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 8,
+              flexWrap: "wrap",
+              marginBottom: 8,
+            }}
+          >
             <CourseTag code={post.courseCode} />
             <PostTypeChip type={post.postType} />
             <DifficultyDot level={post.difficulty} />
           </View>
           <Text style={styles.title}>{post.title}</Text>
-          <Text style={styles.meta}>{post.author} · {post.createdAt}</Text>
+          <Text style={styles.meta}>
+            {post.author} · {post.createdAt}
+          </Text>
           <Text style={styles.content}>{post.content}</Text>
           {!!post.fileUrl && (
-            <Pressable onPress={() => post.fileUrl && Linking.openURL(post.fileUrl)} style={styles.attach}>
+            <Pressable
+              onPress={() => post.fileUrl && Linking.openURL(post.fileUrl)}
+              style={styles.attach}
+            >
               <Text style={styles.attachText}>
-                Attached file · {(post.fileType ?? 'file').toUpperCase()} — tap to open
+                Attached file · {(post.fileType ?? "file").toUpperCase()} — tap
+                to open
               </Text>
             </Pressable>
           )}
         </Card>
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
-            <Button title="Edit post" variant="secondary" onPress={() => router.push(`/(cr)/posts/${post.id}/edit` as never)} />
+            <Button
+              title="Edit post"
+              variant="secondary"
+              onPress={() =>
+                router.push(`/(cr)/posts/${post.id}/edit` as never)
+              }
+            />
           </View>
           <View style={{ flex: 1 }}>
-            <Button title={deleting ? 'Deleting…' : 'Delete'} variant="danger" onPress={remove} />
+            <Button
+              title={deleting ? "Deleting…" : "Delete"}
+              variant="danger"
+              onPress={remove}
+            />
           </View>
         </View>
         {!!deleteError && <Text style={styles.error}>{deleteError}</Text>}
@@ -146,25 +206,63 @@ export default function CRPostDetail() {
   );
 }
 
-const styles = themedStyles(() => StyleSheet.create({
-  title: { ...theme.type.title, color: theme.colors.text },
-  meta: { ...theme.type.caption, color: theme.colors.secondary, marginBottom: 8 },
-  content: { ...theme.type.body, color: theme.colors.body },
-  attach: {
-    marginTop: 12, backgroundColor: theme.colors.softBlue, borderRadius: theme.radius.md,
-    padding: theme.spacing.sm, alignItems: 'center',
-  },
-  attachText: { ...theme.type.caption, fontFamily: theme.font.bold, fontWeight: '700', color: theme.colors.accent },
-  row: { flexDirection: 'row', gap: 8, marginVertical: 8 },
-  section: { ...theme.type.title, color: theme.colors.text, marginVertical: 8 },
-  cAuthor: { fontFamily: theme.font.bold, fontWeight: '700', fontSize: 13 },
-  cBody: { ...theme.type.body, color: theme.colors.body },
-  error: { ...theme.type.caption, color: theme.colors.danger, marginVertical: 8 },
-  composer: { flexDirection: 'row', gap: 8, marginTop: 8, marginBottom: 16 },
-  input: {
-    flex: 1, borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radius.lg,
-    paddingHorizontal: 16, minHeight: 48, ...theme.type.body, color: theme.colors.text,
-  },
-  send: { backgroundColor: theme.colors.primary, borderRadius: theme.radius.lg, paddingHorizontal: 24, justifyContent: 'center', minHeight: 48 },
-  sendText: { color: theme.colors.onPrimary, fontFamily: theme.font.bold, fontWeight: '700' },
-}));
+const styles = themedStyles(() =>
+  StyleSheet.create({
+    title: { ...theme.type.title, color: theme.colors.text },
+    meta: {
+      ...theme.type.caption,
+      color: theme.colors.secondary,
+      marginBottom: 8,
+    },
+    content: { ...theme.type.body, color: theme.colors.body },
+    attach: {
+      marginTop: 12,
+      backgroundColor: theme.colors.softBlue,
+      borderRadius: theme.radius.md,
+      padding: theme.spacing.sm,
+      alignItems: "center",
+    },
+    attachText: {
+      ...theme.type.caption,
+      fontFamily: theme.font.bold,
+      fontWeight: "700",
+      color: theme.colors.accent,
+    },
+    row: { flexDirection: "row", gap: 8, marginVertical: 8 },
+    section: {
+      ...theme.type.title,
+      color: theme.colors.text,
+      marginVertical: 8,
+    },
+    cAuthor: { fontFamily: theme.font.bold, fontWeight: "700", fontSize: 13 },
+    cBody: { ...theme.type.body, color: theme.colors.body },
+    error: {
+      ...theme.type.caption,
+      color: theme.colors.danger,
+      marginVertical: 8,
+    },
+    composer: { flexDirection: "row", gap: 8, marginTop: 8, marginBottom: 16 },
+    input: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: theme.radius.lg,
+      paddingHorizontal: 16,
+      minHeight: 48,
+      ...theme.type.body,
+      color: theme.colors.text,
+    },
+    send: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: theme.radius.lg,
+      paddingHorizontal: 24,
+      justifyContent: "center",
+      minHeight: 48,
+    },
+    sendText: {
+      color: theme.colors.onPrimary,
+      fontFamily: theme.font.bold,
+      fontWeight: "700",
+    },
+  }),
+);

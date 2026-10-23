@@ -1,12 +1,17 @@
-import { Stack } from 'expo-router';
-import { theme } from '@/constants/theme';
+import { Stack } from "expo-router";
+import { theme } from "@/constants/theme";
 
 // Stack-over-Tabs: the tab bar belongs ONLY to the (tabs) group below.
 // CR power screens (new/edit post, upload, task forms…) are Stack screens,
 // so they slide in above the tab bar and can never appear as tabs.
 export default function CRLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.surface } }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: theme.colors.surface },
+      }}
+    >
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="post/[id]" />
       <Stack.Screen name="calendar" />

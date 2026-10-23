@@ -1,5 +1,5 @@
-import { api, clearTokens, saveTokens } from './api';
-import type { Role, RoleInLevel } from '@/types';
+import { api, clearTokens, saveTokens } from "./api";
+import type { Role, RoleInLevel } from "@/types";
 
 // ─── Auth service (real API) ────────────────────────────────────────
 // Shapes mirror the backend auth module exactly. Pending CR responses
@@ -19,7 +19,7 @@ interface AuthOk {
     id: string;
     fullName: string;
     email: string;
-    globalRole: 'admin' | 'cr' | 'student';
+    globalRole: "admin" | "cr" | "student";
     verificationStatus: string | null;
     level: string | null;
     roleInLevel: RoleInLevel | null;
@@ -30,39 +30,73 @@ interface AuthOk {
 }
 
 interface AuthPending {
-  user: { id: string; fullName: string; email: string; globalRole: string; verificationStatus: string; level: string | null; roleInLevel: null };
+  user: {
+    id: string;
+    fullName: string;
+    email: string;
+    globalRole: string;
+    verificationStatus: string;
+    level: string | null;
+    roleInLevel: null;
+  };
   pendingLevel: string | null;
 }
 
-function toSession(u: AuthOk['user']): SessionUser {
+function toSession(u: AuthOk["user"]): SessionUser {
   return {
     fullName: u.fullName,
     email: u.email,
-    role: u.globalRole === 'admin' ? 'student' : u.globalRole,
+    role: u.globalRole === "admin" ? "student" : u.globalRole,
     roleInLevel: u.roleInLevel ?? undefined,
     level: u.level,
   };
 }
 
 export const authApi = {
-  async login(email: string, password: string): Promise<{ user: SessionUser } | { pendingLevel: string | null }> {
-    const res = await api.post<AuthOk | AuthPending>('/api/auth/login', { email, password });
-    if ('accessToken' in res) {
+  async login(
+    email: string,
+    password: string,
+  ): Promise<{ user: SessionUser } | { pendingLevel: string | null }> {
+    const res = await api.post<AuthOk | AuthPending>("/api/auth/login", {
+      email,
+      password,
+    });
+    if ("accessToken" in res) {
       saveTokens(res.accessToken, res.refreshToken);
       return { user: toSession(res.user) };
     }
     return { pendingLevel: res.pendingLevel };
   },
 
-  async signupStudent(fullName: string, email: string, password: string, joinCode: string): Promise<SessionUser> {
-    const res = await api.post<AuthOk>('/api/auth/signup/student', { fullName, email, password, joinCode });
+  async signupStudent(
+    fullName: string,
+    email: string,
+    password: string,
+    joinCode: string,
+  ): Promise<SessionUser> {
+    const res = await api.post<AuthOk>("/api/auth/signup/student", {
+      fullName,
+      email,
+      password,
+      joinCode,
+    });
     saveTokens(res.accessToken, res.refreshToken);
     return toSession(res.user);
   },
 
-  async signupCR(fullName: string, email: string, password: string, levelRequested: string): Promise<SessionUser | { pendingLevel: string | null }> {
-    const res = await api.post<AuthOk | AuthPending>('/api/auth/signup/cr', { fullName, email, password, levelRequested });
-    if ('accessToken' in res) {
+  async signupCR(
+    fullName: string,
+    email: string,
+    password: string,
+    levelRequested: string,
+  ): Promise<SessionUser | { pendingLevel: string | null }> {
+    const res = await api.post<AuthOk | AuthPending>("/api/auth/signup/cr", {
+      fullName,
+      email,
+      password,
+      levelRequested,
+    });
+    if ("accessToken" in res) {
       saveTokens(res.accessToken, res.refreshToken);
       return toSession(res.user);
     }
@@ -71,7 +105,7 @@ export const authApi = {
 
   async logout(): Promise<void> {
     try {
-      await api.post('/api/auth/logout');
+      await api.post("/api/auth/logout");
     } finally {
       clearTokens();
     }
