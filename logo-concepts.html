@@ -1,558 +1,1507 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>SIA — Design Decisions (pick everything)</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&family=Sora:wght@400;700&family=Manrope:wght@400;700&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet" />
-<style>
-  :root {
-    --c-primary: #1E3A8A;
-    --c-dark: #152B66;
-    --c-soft: #E9EFFA;
-    --c-pale: #B9C9EC;
-    --font: "Plus Jakarta Sans", system-ui, sans-serif;
-    --ink: #101828;
-    --muted: rgba(16, 24, 40, 0.62);
-    --border: #E2E9F6;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: var(--font); background: #fff; color: var(--ink); padding-bottom: 96px; }
-  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SIA — Design Decisions (pick everything)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&family=Sora:wght@400;700&family=Manrope:wght@400;700&family=Nunito:wght@400;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --c-primary: #1e3a8a;
+        --c-dark: #152b66;
+        --c-soft: #e9effa;
+        --c-pale: #b9c9ec;
+        --font: "Plus Jakarta Sans", system-ui, sans-serif;
+        --ink: #101828;
+        --muted: rgba(16, 24, 40, 0.62);
+        --border: #e2e9f6;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: var(--font);
+        background: #fff;
+        color: var(--ink);
+        padding-bottom: 96px;
+      }
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
 
-  /* sticky decision bar */
-  .topbar {
-    position: sticky; top: 0; z-index: 50;
-    background: rgba(255,255,255,0.92); backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--border);
-  }
-  .topbar .wrap { display: flex; align-items: center; gap: 16px; padding-top: 12px; padding-bottom: 12px; flex-wrap: wrap; }
-  .brand { background: var(--c-primary); color: #fff; font-weight: 700; border-radius: 10px; padding: 8px 12px; }
-  .topbar nav { display: flex; gap: 4px; flex-wrap: wrap; }
-  .topbar nav a {
-    text-decoration: none; color: var(--ink); font-weight: 700; font-size: 13px;
-    padding: 8px 14px; border-radius: 999px;
-  }
-  .topbar nav a:hover { background: var(--c-soft); color: var(--c-primary); }
-  #summary { margin-left: auto; font-size: 12px; color: var(--muted); }
+      /* sticky decision bar */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--border);
+      }
+      .topbar .wrap {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding-top: 12px;
+        padding-bottom: 12px;
+        flex-wrap: wrap;
+      }
+      .brand {
+        background: var(--c-primary);
+        color: #fff;
+        font-weight: 700;
+        border-radius: 10px;
+        padding: 8px 12px;
+      }
+      .topbar nav {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+      }
+      .topbar nav a {
+        text-decoration: none;
+        color: var(--ink);
+        font-weight: 700;
+        font-size: 13px;
+        padding: 8px 14px;
+        border-radius: 999px;
+      }
+      .topbar nav a:hover {
+        background: var(--c-soft);
+        color: var(--c-primary);
+      }
+      #summary {
+        margin-left: auto;
+        font-size: 12px;
+        color: var(--muted);
+      }
 
-  header.hero { text-align: center; padding: 48px 0 8px; }
-  .kicker {
-    display: inline-block; background: var(--c-soft); color: var(--c-primary);
-    font-weight: 700; font-size: 13px; padding: 6px 16px; border-radius: 999px; margin-bottom: 16px;
-  }
-  header.hero h1 { font-size: 34px; margin-bottom: 8px; }
-  header.hero p { color: var(--muted); font-size: 16px; max-width: 600px; margin: 0 auto; }
+      header.hero {
+        text-align: center;
+        padding: 48px 0 8px;
+      }
+      .kicker {
+        display: inline-block;
+        background: var(--c-soft);
+        color: var(--c-primary);
+        font-weight: 700;
+        font-size: 13px;
+        padding: 6px 16px;
+        border-radius: 999px;
+        margin-bottom: 16px;
+      }
+      header.hero h1 {
+        font-size: 34px;
+        margin-bottom: 8px;
+      }
+      header.hero p {
+        color: var(--muted);
+        font-size: 16px;
+        max-width: 600px;
+        margin: 0 auto;
+      }
 
-  section { padding-top: 56px; }
-  section > h2 { font-size: 24px; margin-bottom: 4px; }
-  section > p.sub { color: var(--muted); margin-bottom: 20px; }
-  .grid { display: grid; gap: 20px; }
-  .g4 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-  .g3 { grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); }
-  .g2 { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+      section {
+        padding-top: 56px;
+      }
+      section > h2 {
+        font-size: 24px;
+        margin-bottom: 4px;
+      }
+      section > p.sub {
+        color: var(--muted);
+        margin-bottom: 20px;
+      }
+      .grid {
+        display: grid;
+        gap: 20px;
+      }
+      .g4 {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+      .g3 {
+        grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      }
+      .g2 {
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      }
 
-  .card {
-    border: 1px solid var(--border); border-radius: 20px; padding: 20px;
-    cursor: pointer; background: #fff;
-    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-  }
-  .card:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(16, 24, 40, 0.10); }
-  .card.selected { border: 2px solid var(--c-primary); box-shadow: 0 12px 28px rgba(16, 24, 40, 0.12); }
-  .card h3 { font-size: 18px; margin-bottom: 4px; }
-  .card h3 .tag {
-    font-size: 12px; background: var(--ink); color: #fff;
-    border-radius: 999px; padding: 3px 10px; vertical-align: middle; margin-right: 6px;
-  }
-  .card .line { font-size: 14px; opacity: .8; margin-bottom: 10px; }
-  .card ul { list-style: none; margin-bottom: 14px; }
-  .card ul li { color: var(--muted); font-size: 13px; margin-bottom: 3px; }
-  .card ul li::before { content: "•  "; color: var(--c-primary); font-weight: 700; }
-  .pick-btn {
-    width: 100%; border: 1px solid var(--border); background: var(--c-soft); color: var(--c-primary);
-    border-radius: 12px; min-height: 46px; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer;
-  }
-  .card.selected .pick-btn { background: var(--c-primary); border-color: var(--c-primary); color: #fff; }
+      .card {
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 20px;
+        cursor: pointer;
+        background: #fff;
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease,
+          border-color 0.15s ease;
+      }
+      .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 28px rgba(16, 24, 40, 0.1);
+      }
+      .card.selected {
+        border: 2px solid var(--c-primary);
+        box-shadow: 0 12px 28px rgba(16, 24, 40, 0.12);
+      }
+      .card h3 {
+        font-size: 18px;
+        margin-bottom: 4px;
+      }
+      .card h3 .tag {
+        font-size: 12px;
+        background: var(--ink);
+        color: #fff;
+        border-radius: 999px;
+        padding: 3px 10px;
+        vertical-align: middle;
+        margin-right: 6px;
+      }
+      .card .line {
+        font-size: 14px;
+        opacity: 0.8;
+        margin-bottom: 10px;
+      }
+      .card ul {
+        list-style: none;
+        margin-bottom: 14px;
+      }
+      .card ul li {
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 3px;
+      }
+      .card ul li::before {
+        content: "•  ";
+        color: var(--c-primary);
+        font-weight: 700;
+      }
+      .pick-btn {
+        width: 100%;
+        border: 1px solid var(--border);
+        background: var(--c-soft);
+        color: var(--c-primary);
+        border-radius: 12px;
+        min-height: 46px;
+        font-size: 14px;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+      }
+      .card.selected .pick-btn {
+        background: var(--c-primary);
+        border-color: var(--c-primary);
+        color: #fff;
+      }
 
-  /* color swatches */
-  .swatches { display: flex; gap: 8px; margin-bottom: 14px; }
-  .swatches span { flex: 1; height: 64px; border-radius: 12px; }
-  .hex { font-size: 12px; color: var(--muted); font-family: ui-monospace, monospace; }
+      /* color swatches */
+      .swatches {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .swatches span {
+        flex: 1;
+        height: 64px;
+        border-radius: 12px;
+      }
+      .hex {
+        font-size: 12px;
+        color: var(--muted);
+        font-family: ui-monospace, monospace;
+      }
 
-  /* logo art */
-  .art { background: var(--c-soft); border-radius: 14px; display: flex; justify-content: center; padding: 28px; margin-bottom: 16px; }
-  .rowbtns { display: flex; gap: 8px; }
-  .dl { flex: 0 0 52px; background: #F4F6FA; color: var(--ink); border: none; border-radius: 12px; font-size: 18px; cursor: pointer; }
+      /* logo art */
+      .art {
+        background: var(--c-soft);
+        border-radius: 14px;
+        display: flex;
+        justify-content: center;
+        padding: 28px;
+        margin-bottom: 16px;
+      }
+      .rowbtns {
+        display: flex;
+        gap: 8px;
+      }
+      .dl {
+        flex: 0 0 52px;
+        background: #f4f6fa;
+        color: var(--ink);
+        border: none;
+        border-radius: 12px;
+        font-size: 18px;
+        cursor: pointer;
+      }
 
-  /* font cards */
-  .aa { font-size: 56px; font-weight: 700; margin-bottom: 8px; }
-  .sample-h { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-  .sample-b { font-size: 14px; color: var(--muted); }
+      /* font cards */
+      .aa {
+        font-size: 56px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      .sample-h {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .sample-b {
+        font-size: 14px;
+        color: var(--muted);
+      }
 
-  /* phone mockups */
-  .phone {
-    width: 100%; max-width: 330px; margin: 0 auto 16px;
-    border: 1px solid var(--border); border-radius: 32px; overflow: hidden;
-    background: #fff; font-size: 13px;
-  }
-  .notch { height: 22px; display: flex; justify-content: center; align-items: center; }
-  .notch i { width: 90px; height: 16px; background: var(--ink); border-radius: 999px; display: block; }
-  .m-head { padding: 10px 16px 4px; display: flex; align-items: center; gap: 10px; }
-  .m-logo { width: 34px; height: 34px; border-radius: 9px; background: var(--c-primary); color: #fff;
-    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
-  .m-title { font-weight: 700; font-size: 16px; }
-  .m-meta { font-size: 11px; color: var(--muted); }
-  .m-bell { margin-left: auto; position: relative; font-size: 18px; }
-  .m-bell b { position: absolute; top: -6px; right: -6px; background: var(--c-primary); color: #fff;
-    font-size: 9px; border-radius: 999px; min-width: 15px; height: 15px; display: flex; align-items: center; justify-content: center; }
-  .m-body { padding: 10px 14px 14px; }
-  .m-hello { font-size: 21px; font-weight: 700; }
-  .m-sub { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
-  .m-hero { background: var(--c-primary); color: #fff; border-radius: 16px; padding: 12px; margin-bottom: 10px; }
-  .m-hero .k { font-size: 10px; font-weight: 700; opacity: .85; display: flex; justify-content: space-between; margin-bottom: 6px; }
-  .m-hero .t { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
-  .m-hero .c { font-size: 12px; font-weight: 700; }
-  .m-stats { display: flex; gap: 8px; margin-bottom: 10px; }
-  .m-stat { flex: 1; border: 1px solid var(--border); border-radius: 12px; padding: 8px 4px; text-align: center; }
-  .m-stat b { font-size: 17px; display: block; }
-  .m-stat span { font-size: 10px; color: var(--muted); }
-  .m-plan { border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin-bottom: 10px; }
-  .m-plan .r { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-bottom: 6px; }
-  .m-plan .r span:last-child { color: var(--c-primary); }
-  .m-bar { height: 7px; border-radius: 4px; background: #F4F6FA; overflow: hidden; }
-  .m-bar i { display: block; height: 7px; width: 33%; background: var(--c-primary); border-radius: 4px; }
-  .m-sec { font-size: 15px; font-weight: 700; margin: 12px 0 8px; }
-  .m-actions { display: flex; gap: 8px; }
-  .m-act { flex: 1; border: 1px solid var(--border); border-radius: 12px; padding: 10px 2px; text-align: center; }
-  .m-act i { display: flex; width: 34px; height: 34px; border-radius: 50%; background: var(--c-soft);
-    align-items: center; justify-content: center; margin: 0 auto 4px; font-style: normal; font-size: 15px; }
-  .m-act span { font-size: 10px; font-weight: 700; }
-  .m-chips { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
-  .m-chip { border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; font-size: 11px; font-weight: 700; }
-  .m-chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
-  .m-post { border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin-bottom: 8px; }
-  .m-tags { display: flex; gap: 6px; margin-bottom: 6px; }
-  .m-tag { font-size: 10px; font-weight: 700; border-radius: 999px; padding: 3px 9px; }
-  .m-tag.blue { background: var(--c-soft); color: var(--c-primary); }
-  .m-tag.dark { background: var(--ink); color: #fff; }
-  .m-post b { font-size: 13px; display: block; margin-bottom: 2px; }
-  .m-post span { font-size: 11px; color: var(--muted); }
-  .m-tile { border-radius: 14px; padding: 12px; color: #fff; }
-  .m-tile b { font-size: 20px; display: block; }
-  .m-tile span { font-size: 11px; opacity: .9; }
-  .m-row2 { display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin-bottom: 8px; }
-  .m-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--c-primary); flex: 0 0 12px; }
-  .m-tl { position: relative; padding-left: 22px; margin-bottom: 4px; }
-  .m-tl::before { content: ""; position: absolute; left: 6px; top: 8px; bottom: -4px; width: 2px; background: var(--c-soft); }
-  .m-tl:last-child::before { display: none; }
-  .m-tl i { position: absolute; left: 0; top: 4px; width: 14px; height: 14px; border-radius: 50%;
-    background: #fff; border: 3px solid var(--c-primary); }
-  .m-tl.done i { background: var(--c-primary); }
-  .m-tl b { font-size: 12px; display: block; }
-  .m-tl span { font-size: 11px; color: var(--muted); }
-  .m-caps { font-size: 10px; font-weight: 700; letter-spacing: .12em; color: var(--muted); margin: 12px 0 6px; }
-  .m-outline { border: 1.5px solid var(--c-primary); border-radius: 16px; padding: 12px; margin-bottom: 10px; }
-  .m-outline b { font-size: 14px; display: block; margin: 4px 0; }
-  .m-links { display: flex; gap: 14px; font-size: 12px; font-weight: 700; color: var(--c-primary); margin-bottom: 6px; }
-  .m-feedrow { display: flex; justify-content: space-between; align-items: center; padding: 10px 2px; border-bottom: 1px solid var(--border); }
-  .m-feedrow b { font-size: 12px; display: block; }
-  .m-feedrow span { font-size: 11px; color: var(--muted); }
+      /* phone mockups */
+      .phone {
+        width: 100%;
+        max-width: 330px;
+        margin: 0 auto 16px;
+        border: 1px solid var(--border);
+        border-radius: 32px;
+        overflow: hidden;
+        background: #fff;
+        font-size: 13px;
+      }
+      .notch {
+        height: 22px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .notch i {
+        width: 90px;
+        height: 16px;
+        background: var(--ink);
+        border-radius: 999px;
+        display: block;
+      }
+      .m-head {
+        padding: 10px 16px 4px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .m-logo {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        background: var(--c-primary);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 13px;
+      }
+      .m-title {
+        font-weight: 700;
+        font-size: 16px;
+      }
+      .m-meta {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .m-bell {
+        margin-left: auto;
+        position: relative;
+        font-size: 18px;
+      }
+      .m-bell b {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        background: var(--c-primary);
+        color: #fff;
+        font-size: 9px;
+        border-radius: 999px;
+        min-width: 15px;
+        height: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .m-body {
+        padding: 10px 14px 14px;
+      }
+      .m-hello {
+        font-size: 21px;
+        font-weight: 700;
+      }
+      .m-sub {
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 10px;
+      }
+      .m-hero {
+        background: var(--c-primary);
+        color: #fff;
+        border-radius: 16px;
+        padding: 12px;
+        margin-bottom: 10px;
+      }
+      .m-hero .k {
+        font-size: 10px;
+        font-weight: 700;
+        opacity: 0.85;
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+      }
+      .m-hero .t {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .m-hero .c {
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .m-stats {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .m-stat {
+        flex: 1;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 8px 4px;
+        text-align: center;
+      }
+      .m-stat b {
+        font-size: 17px;
+        display: block;
+      }
+      .m-stat span {
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .m-plan {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+      .m-plan .r {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .m-plan .r span:last-child {
+        color: var(--c-primary);
+      }
+      .m-bar {
+        height: 7px;
+        border-radius: 4px;
+        background: #f4f6fa;
+        overflow: hidden;
+      }
+      .m-bar i {
+        display: block;
+        height: 7px;
+        width: 33%;
+        background: var(--c-primary);
+        border-radius: 4px;
+      }
+      .m-sec {
+        font-size: 15px;
+        font-weight: 700;
+        margin: 12px 0 8px;
+      }
+      .m-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .m-act {
+        flex: 1;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px 2px;
+        text-align: center;
+      }
+      .m-act i {
+        display: flex;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: var(--c-soft);
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 4px;
+        font-style: normal;
+        font-size: 15px;
+      }
+      .m-act span {
+        font-size: 10px;
+        font-weight: 700;
+      }
+      .m-chips {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
+      }
+      .m-chip {
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .m-chip.on {
+        background: var(--ink);
+        color: #fff;
+        border-color: var(--ink);
+      }
+      .m-post {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px;
+        margin-bottom: 8px;
+      }
+      .m-tags {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+      .m-tag {
+        font-size: 10px;
+        font-weight: 700;
+        border-radius: 999px;
+        padding: 3px 9px;
+      }
+      .m-tag.blue {
+        background: var(--c-soft);
+        color: var(--c-primary);
+      }
+      .m-tag.dark {
+        background: var(--ink);
+        color: #fff;
+      }
+      .m-post b {
+        font-size: 13px;
+        display: block;
+        margin-bottom: 2px;
+      }
+      .m-post span {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .m-tile {
+        border-radius: 14px;
+        padding: 12px;
+        color: #fff;
+      }
+      .m-tile b {
+        font-size: 20px;
+        display: block;
+      }
+      .m-tile span {
+        font-size: 11px;
+        opacity: 0.9;
+      }
+      .m-row2 {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 10px;
+        margin-bottom: 8px;
+      }
+      .m-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--c-primary);
+        flex: 0 0 12px;
+      }
+      .m-tl {
+        position: relative;
+        padding-left: 22px;
+        margin-bottom: 4px;
+      }
+      .m-tl::before {
+        content: "";
+        position: absolute;
+        left: 6px;
+        top: 8px;
+        bottom: -4px;
+        width: 2px;
+        background: var(--c-soft);
+      }
+      .m-tl:last-child::before {
+        display: none;
+      }
+      .m-tl i {
+        position: absolute;
+        left: 0;
+        top: 4px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #fff;
+        border: 3px solid var(--c-primary);
+      }
+      .m-tl.done i {
+        background: var(--c-primary);
+      }
+      .m-tl b {
+        font-size: 12px;
+        display: block;
+      }
+      .m-tl span {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .m-caps {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        margin: 12px 0 6px;
+      }
+      .m-outline {
+        border: 1.5px solid var(--c-primary);
+        border-radius: 16px;
+        padding: 12px;
+        margin-bottom: 10px;
+      }
+      .m-outline b {
+        font-size: 14px;
+        display: block;
+        margin: 4px 0;
+      }
+      .m-links {
+        display: flex;
+        gap: 14px;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--c-primary);
+        margin-bottom: 6px;
+      }
+      .m-feedrow {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 2px;
+        border-bottom: 1px solid var(--border);
+      }
+      .m-feedrow b {
+        font-size: 12px;
+        display: block;
+      }
+      .m-feedrow span {
+        font-size: 11px;
+        color: var(--muted);
+      }
 
-  /* tab bars */
-  .tabbar { display: flex; background: #fff; border-top: 1px solid var(--border); padding: 8px 4px 14px; }
-  .tabbar .tb { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
-    color: var(--muted); font-size: 10px; cursor: pointer; padding: 4px 0; }
-  .tabbar .tb i { font-style: normal; font-size: 19px; }
-  .tabbar .tb.on { color: var(--c-primary); font-weight: 700; }
-  .dock-wrap { background: #F4F6FA; padding: 12px; }
-  .dock { display: flex; background: #fff; border-radius: 22px; padding: 8px 4px;
-    box-shadow: 0 8px 24px rgba(16,24,40,.12); }
-  .dock .tb { flex: 1; display: flex; align-items: center; justify-content: center; cursor: pointer;
-    font-size: 18px; border-radius: 16px; padding: 8px 0; color: var(--muted); font-style: normal; }
-  .dock .tb.on { background: var(--c-soft); color: var(--c-primary); }
-  .dotsbar { display: flex; background: #fff; border-top: 1px solid var(--border); padding: 10px 4px 16px; }
-  .dotsbar .tb { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
-    color: var(--muted); font-size: 18px; cursor: pointer; font-style: normal; }
-  .dotsbar .tb u { width: 5px; height: 5px; border-radius: 50%; background: transparent; text-decoration: none; }
-  .dotsbar .tb.on { color: var(--c-primary); }
-  .dotsbar .tb.on u { background: var(--c-primary); }
-  .fabbar { display: flex; background: #fff; border-top: 1px solid var(--border);
-    padding: 6px 4px 16px; align-items: flex-end; }
-  .fabbar .tb { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
-    color: var(--muted); font-size: 10px; cursor: pointer; }
-  .fabbar .tb i { font-style: normal; font-size: 19px; }
-  .fabbar .tb.on { color: var(--c-primary); font-weight: 700; }
-  .fab { flex: 1; display: flex; justify-content: center; }
-  .fab b { width: 52px; height: 52px; border-radius: 50%; background: var(--c-primary); color: #fff;
-    font-size: 26px; display: flex; align-items: center; justify-content: center; margin-top: -24px;
-    box-shadow: 0 8px 20px rgba(16,24,40,.25); cursor: pointer; }
+      /* tab bars */
+      .tabbar {
+        display: flex;
+        background: #fff;
+        border-top: 1px solid var(--border);
+        padding: 8px 4px 14px;
+      }
+      .tabbar .tb {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        color: var(--muted);
+        font-size: 10px;
+        cursor: pointer;
+        padding: 4px 0;
+      }
+      .tabbar .tb i {
+        font-style: normal;
+        font-size: 19px;
+      }
+      .tabbar .tb.on {
+        color: var(--c-primary);
+        font-weight: 700;
+      }
+      .dock-wrap {
+        background: #f4f6fa;
+        padding: 12px;
+      }
+      .dock {
+        display: flex;
+        background: #fff;
+        border-radius: 22px;
+        padding: 8px 4px;
+        box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12);
+      }
+      .dock .tb {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 18px;
+        border-radius: 16px;
+        padding: 8px 0;
+        color: var(--muted);
+        font-style: normal;
+      }
+      .dock .tb.on {
+        background: var(--c-soft);
+        color: var(--c-primary);
+      }
+      .dotsbar {
+        display: flex;
+        background: #fff;
+        border-top: 1px solid var(--border);
+        padding: 10px 4px 16px;
+      }
+      .dotsbar .tb {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        color: var(--muted);
+        font-size: 18px;
+        cursor: pointer;
+        font-style: normal;
+      }
+      .dotsbar .tb u {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: transparent;
+        text-decoration: none;
+      }
+      .dotsbar .tb.on {
+        color: var(--c-primary);
+      }
+      .dotsbar .tb.on u {
+        background: var(--c-primary);
+      }
+      .fabbar {
+        display: flex;
+        background: #fff;
+        border-top: 1px solid var(--border);
+        padding: 6px 4px 16px;
+        align-items: flex-end;
+      }
+      .fabbar .tb {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        color: var(--muted);
+        font-size: 10px;
+        cursor: pointer;
+      }
+      .fabbar .tb i {
+        font-style: normal;
+        font-size: 19px;
+      }
+      .fabbar .tb.on {
+        color: var(--c-primary);
+        font-weight: 700;
+      }
+      .fab {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+      }
+      .fab b {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: var(--c-primary);
+        color: #fff;
+        font-size: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: -24px;
+        box-shadow: 0 8px 20px rgba(16, 24, 40, 0.25);
+        cursor: pointer;
+      }
 
-  footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 56px; }
-  #final { background: var(--ink); color: #fff; border-radius: 20px; padding: 24px; margin-top: 48px; }
-  #final h2 { margin-bottom: 8px; }
-  #final p { opacity: .75; font-size: 14px; }
-  #final code { font-family: ui-monospace, monospace; }
-</style>
-</head>
-<body>
-
-<div class="topbar"><div class="wrap">
-  <span class="brand">SIA decisions</span>
-  <nav>
-    <a href="#colors">Colors</a><a href="#logos">Logos</a><a href="#fonts">Fonts</a><a href="#tabs">Tabs</a><a href="#home">Home</a>
-  </nav>
-  <span id="summary"></span>
-</div></div>
-
-<div class="wrap">
-  <header class="hero">
-    <div class="kicker">SIA · STUDENT ITINERARY APP</div>
-    <h1>Pick the look. I'll build it.</h1>
-    <p>Five decisions, one page. Everything updates live — your picks are saved in this browser.</p>
-  </header>
-
-  <!-- ════════ 1 · COLORS ════════ -->
-  <section id="colors">
-    <h2>1 · Brand color — sleek dark blue</h2>
-    <p class="sub">Four directions. Click one: logos, buttons, heroes and tabs below all re-theme instantly.</p>
-    <div class="grid g4" id="color-grid"></div>
-  </section>
-
-  <!-- ════════ 2 · LOGOS ════════ -->
-  <section id="logos">
-    <h2>2 · Logo — Cap Signal is your pick ✓</h2>
-    <p class="sub">Change your mind any time. ⬇ downloads the SVG.</p>
-    <div class="grid g3">
-      <div class="card" data-logo="A">
-        <div class="art">
-          <svg id="logo-a" width="140" height="140" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-            <rect x="8" y="8" width="104" height="104" rx="28" fill="var(--c-primary)"/>
-            <path d="M38 62l14 14 30-34" fill="none" stroke="#ffffff" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <h3><span class="tag">A</span>Verified Check</h3>
-        <p class="line">A seal of approval — trust, stamped.</p>
-        <div class="rowbtns"><button class="pick-btn">Use this logo</button><button class="dl" data-dl="logo-a">⬇</button></div>
-      </div>
-      <div class="card" data-logo="B">
-        <div class="art">
-          <svg id="logo-b" width="140" height="140" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-            <path d="M22 92C42 92 44 70 62 66c18-4 22-26 36-30" fill="none" stroke="#101828" stroke-width="6" stroke-linecap="round" stroke-dasharray="1 12"/>
-            <circle cx="22" cy="92" r="10" fill="var(--c-pale)"/>
-            <circle cx="62" cy="66" r="11" fill="var(--c-primary)"/>
-            <circle cx="94" cy="34" r="15" fill="var(--c-dark)"/>
-            <path d="M87 34l5 5 9-10" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <h3><span class="tag">B</span>Ascending Path</h3>
-        <p class="line">Milestones climbing a route — momentum.</p>
-        <div class="rowbtns"><button class="pick-btn">Use this logo</button><button class="dl" data-dl="logo-b">⬇</button></div>
-      </div>
-      <div class="card" data-logo="C">
-        <div class="art">
-          <svg id="logo-c" width="140" height="140" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-            <path d="M38 34a32 32 0 0 1 44 0" fill="none" stroke="var(--c-pale)" stroke-width="7" stroke-linecap="round"/>
-            <path d="M48 24a18 18 0 0 1 24 0" fill="none" stroke="var(--c-primary)" stroke-width="7" stroke-linecap="round"/>
-            <polygon points="60,52 104,70 60,88 16,70" fill="var(--c-primary)"/>
-            <path d="M40 78v10c0 9 40 9 40 0V78l-20 9z" fill="var(--c-dark)"/>
-            <path d="M100 71v18" stroke="var(--c-dark)" stroke-width="5" stroke-linecap="round"/>
-            <circle cx="100" cy="93" r="6" fill="var(--c-dark)"/>
-          </svg>
-        </div>
-        <h3><span class="tag">C</span>Cap Signal</h3>
-        <p class="line">A graduation cap that broadcasts — academia, alive.</p>
-        <div class="rowbtns"><button class="pick-btn">Use this logo</button><button class="dl" data-dl="logo-c">⬇</button></div>
+      footer {
+        text-align: center;
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 56px;
+      }
+      #final {
+        background: var(--ink);
+        color: #fff;
+        border-radius: 20px;
+        padding: 24px;
+        margin-top: 48px;
+      }
+      #final h2 {
+        margin-bottom: 8px;
+      }
+      #final p {
+        opacity: 0.75;
+        font-size: 14px;
+      }
+      #final code {
+        font-family: ui-monospace, monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="wrap">
+        <span class="brand">SIA decisions</span>
+        <nav>
+          <a href="#colors">Colors</a><a href="#logos">Logos</a
+          ><a href="#fonts">Fonts</a><a href="#tabs">Tabs</a
+          ><a href="#home">Home</a>
+        </nav>
+        <span id="summary"></span>
       </div>
     </div>
-  </section>
 
-  <!-- ════════ 3 · FONTS ════════ -->
-  <section id="fonts">
-    <h2>3 · Typeface</h2>
-    <p class="sub">One family app-wide, two weights. Shown in a real headline + body.</p>
-    <div class="grid g4" id="font-grid"></div>
-  </section>
+    <div class="wrap">
+      <header class="hero">
+        <div class="kicker">SIA · STUDENT ITINERARY APP</div>
+        <h1>Pick the look. I'll build it.</h1>
+        <p>
+          Five decisions, one page. Everything updates live — your picks are
+          saved in this browser.
+        </p>
+      </header>
 
-  <!-- ════════ 4 · TABS ════════ -->
-  <section id="tabs">
-    <h2>4 · Tab bar style</h2>
-    <p class="sub">Five tabs: Home · Plan · Files · CGPA · You. Tap inside a mock to feel it.</p>
-    <div class="grid g2">
-      <div class="card" data-tabs="T1">
-        <h3><span class="tag">T1</span>Classic</h3>
-        <p class="line">Icon + label. Familiar, zero learning curve. (Current app.)</p>
-        <div class="phone"><div class="tabbar">
-          <div class="tb on"><i>⌂</i>Home</div><div class="tb"><i>✓</i>Plan</div><div class="tb"><i>▤</i>Files</div><div class="tb"><i>◔</i>CGPA</div><div class="tb"><i>○</i>You</div>
-        </div></div>
-        <button class="pick-btn">Use this style</button>
-      </div>
-      <div class="card" data-tabs="T2">
-        <h3><span class="tag">T2</span>Floating dock</h3>
-        <p class="line">Detached pill, soft shadow. Modern, premium feel.</p>
-        <div class="phone"><div class="dock-wrap"><div class="dock">
-          <div class="tb on">⌂</div><div class="tb">✓</div><div class="tb">▤</div><div class="tb">◔</div><div class="tb">○</div>
-        </div></div></div>
-        <button class="pick-btn">Use this style</button>
-      </div>
-      <div class="card" data-tabs="T3">
-        <h3><span class="tag">T3</span>Minimal dots</h3>
-        <p class="line">Icons only, dot indicator. Quiet, content-first.</p>
-        <div class="phone"><div class="dotsbar">
-          <div class="tb on">⌂<u>•</u></div><div class="tb">✓<u>•</u></div><div class="tb">▤<u>•</u></div><div class="tb">◔<u>•</u></div><div class="tb">○<u>•</u></div>
-        </div></div>
-        <button class="pick-btn">Use this style</button>
-      </div>
-      <div class="card" data-tabs="T4">
-        <h3><span class="tag">T4</span>Center action</h3>
-        <p class="line">Raised + button for “New task”. Fastest path to the core action.</p>
-        <div class="phone"><div class="fabbar">
-          <div class="tb on"><i>⌂</i>Home</div><div class="tb"><i>✓</i>Plan</div>
-          <div class="fab"><b>+</b></div>
-          <div class="tb"><i>◔</i>CGPA</div><div class="tb"><i>○</i>You</div>
-        </div></div>
-        <button class="pick-btn">Use this style</button>
-      </div>
-    </div>
-  </section>
+      <!-- ════════ 1 · COLORS ════════ -->
+      <section id="colors">
+        <h2>1 · Brand color — sleek dark blue</h2>
+        <p class="sub">
+          Four directions. Click one: logos, buttons, heroes and tabs below all
+          re-theme instantly.
+        </p>
+        <div class="grid g4" id="color-grid"></div>
+      </section>
 
-  <!-- ════════ 5 · HOME ════════ -->
-  <section id="home">
-    <h2>5 · Home dashboard</h2>
-    <p class="sub">Four arrangements of the same content. All live in your picked color + font.</p>
-    <div class="grid g2">
-
-      <div class="card" data-home="V1">
-        <h3><span class="tag">V1</span>Focus <span style="font-size:12px;color:var(--muted)">(current app)</span></h3>
-        <p class="line">One urgent hero, stats, plan bar, shortcuts, feed.</p>
-        <div class="phone">
-          <div class="m-head"><div class="m-logo">S</div><div><div class="m-title">Home</div><div class="m-meta">300L · 1st Semester</div></div><div class="m-bell">🔔<b>2</b></div></div>
-          <div class="m-body">
-            <div class="m-hello">Good morning, John 👋</div>
-            <div class="m-sub">Here's your level at a glance.</div>
-            <div class="m-hero"><div class="k"><span>UP NEXT · CSC 303</span><span>⏰ in 2 days</span></div><div class="t">Assignment 3 — Graphs due Friday</div><div class="c">View post ›</div></div>
-            <div class="m-stats"><div class="m-stat"><b>2</b><span>Due soon</span></div><div class="m-stat"><b>2</b><span>Unread</span></div><div class="m-stat"><b>1/3</b><span>Tasks</span></div></div>
-            <div class="m-plan"><div class="r"><span>Today's plan</span><span>Keep going ›</span></div><div class="m-bar"><i></i></div></div>
-            <div class="m-sec">Quick actions</div>
-            <div class="m-actions">
-              <div class="m-act"><i>📅</i><span>Calendar</span></div><div class="m-act"><i>＋</i><span>New task</span></div><div class="m-act"><i>▤</i><span>Files</span></div><div class="m-act"><i>◔</i><span>CGPA</span></div>
+      <!-- ════════ 2 · LOGOS ════════ -->
+      <section id="logos">
+        <h2>2 · Logo — Cap Signal is your pick ✓</h2>
+        <p class="sub">Change your mind any time. ⬇ downloads the SVG.</p>
+        <div class="grid g3">
+          <div class="card" data-logo="A">
+            <div class="art">
+              <svg
+                id="logo-a"
+                width="140"
+                height="140"
+                viewBox="0 0 120 120"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect
+                  x="8"
+                  y="8"
+                  width="104"
+                  height="104"
+                  rx="28"
+                  fill="var(--c-primary)"
+                />
+                <path
+                  d="M38 62l14 14 30-34"
+                  fill="none"
+                  stroke="#ffffff"
+                  stroke-width="13"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
             </div>
-            <div class="m-sec">Latest from your CRs</div>
-            <div class="m-chips"><span class="m-chip on">All</span><span class="m-chip">Tasks</span><span class="m-chip">Tests</span></div>
-            <div class="m-post"><div class="m-tags"><span class="m-tag blue">CSC 303</span><span class="m-tag dark">Task</span></div><b>Assignment 3 — Graphs due Friday</b><span>Adaeze O. · 2h ago</span></div>
-            <div class="m-post"><div class="m-tags"><span class="m-tag blue">CSC 301</span><span class="m-tag dark">Test</span></div><b>Mid-semester test Thursday</b><span>Adaeze O. · 5h ago</span></div>
-          </div>
-        </div>
-        <button class="pick-btn">Use this layout</button>
-      </div>
-
-      <div class="card" data-home="V2">
-        <h3><span class="tag">V2</span>Command grid</h3>
-        <p class="line">Stat tiles first — glanceable, dense, power-user friendly.</p>
-        <div class="phone">
-          <div class="m-head"><div class="m-logo">S</div><div><div class="m-title">Home</div><div class="m-meta">300L · 1st Semester</div></div><div class="m-bell">🔔<b>2</b></div></div>
-          <div class="m-body">
-            <div class="m-hello">Good morning, John 👋</div>
-            <div class="m-sub">Tuesday, Week 6.</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-              <div class="m-tile" style="background:var(--c-primary)"><b>2</b><span>Due soon</span></div>
-              <div class="m-tile" style="background:var(--c-dark)"><b>2</b><span>Unread alerts</span></div>
-              <div class="m-tile" style="background:#1B9C6B"><b>1/3</b><span>Tasks done</span></div>
-              <div class="m-tile" style="background:var(--ink)"><b>4.03</b><span>CGPA</span></div>
+            <h3><span class="tag">A</span>Verified Check</h3>
+            <p class="line">A seal of approval — trust, stamped.</p>
+            <div class="rowbtns">
+              <button class="pick-btn">Use this logo</button
+              ><button class="dl" data-dl="logo-a">⬇</button>
             </div>
-            <div class="m-sec">Today</div>
-            <div class="m-row2"><div class="m-dot"></div><div><b>10:00 — CSC 307 guest lecture</b><span>Hall B · attendance taken</span></div></div>
-            <div class="m-row2"><div class="m-dot" style="background:var(--c-pale)"></div><div><b>Finish graph assignment</b><span>Due in 2 days · Hard</span></div></div>
-            <div class="m-row2"><div class="m-dot" style="background:#1B9C6B"></div><div><b>Revise scheduling algorithms</b><span>Done ✓</span></div></div>
+          </div>
+          <div class="card" data-logo="B">
+            <div class="art">
+              <svg
+                id="logo-b"
+                width="140"
+                height="140"
+                viewBox="0 0 120 120"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M22 92C42 92 44 70 62 66c18-4 22-26 36-30"
+                  fill="none"
+                  stroke="#101828"
+                  stroke-width="6"
+                  stroke-linecap="round"
+                  stroke-dasharray="1 12"
+                />
+                <circle cx="22" cy="92" r="10" fill="var(--c-pale)" />
+                <circle cx="62" cy="66" r="11" fill="var(--c-primary)" />
+                <circle cx="94" cy="34" r="15" fill="var(--c-dark)" />
+                <path
+                  d="M87 34l5 5 9-10"
+                  fill="none"
+                  stroke="#ffffff"
+                  stroke-width="4.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <h3><span class="tag">B</span>Ascending Path</h3>
+            <p class="line">Milestones climbing a route — momentum.</p>
+            <div class="rowbtns">
+              <button class="pick-btn">Use this logo</button
+              ><button class="dl" data-dl="logo-b">⬇</button>
+            </div>
+          </div>
+          <div class="card" data-logo="C">
+            <div class="art">
+              <svg
+                id="logo-c"
+                width="140"
+                height="140"
+                viewBox="0 0 120 120"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M38 34a32 32 0 0 1 44 0"
+                  fill="none"
+                  stroke="var(--c-pale)"
+                  stroke-width="7"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M48 24a18 18 0 0 1 24 0"
+                  fill="none"
+                  stroke="var(--c-primary)"
+                  stroke-width="7"
+                  stroke-linecap="round"
+                />
+                <polygon
+                  points="60,52 104,70 60,88 16,70"
+                  fill="var(--c-primary)"
+                />
+                <path
+                  d="M40 78v10c0 9 40 9 40 0V78l-20 9z"
+                  fill="var(--c-dark)"
+                />
+                <path
+                  d="M100 71v18"
+                  stroke="var(--c-dark)"
+                  stroke-width="5"
+                  stroke-linecap="round"
+                />
+                <circle cx="100" cy="93" r="6" fill="var(--c-dark)" />
+              </svg>
+            </div>
+            <h3><span class="tag">C</span>Cap Signal</h3>
+            <p class="line">
+              A graduation cap that broadcasts — academia, alive.
+            </p>
+            <div class="rowbtns">
+              <button class="pick-btn">Use this logo</button
+              ><button class="dl" data-dl="logo-c">⬇</button>
+            </div>
           </div>
         </div>
-        <button class="pick-btn">Use this layout</button>
-      </div>
+      </section>
 
-      <div class="card" data-home="V3">
-        <h3><span class="tag">V3</span>Day timeline</h3>
-        <p class="line">Your day as a story — posts + tasks merged in time order.</p>
-        <div class="phone">
-          <div class="m-head"><div class="m-logo">S</div><div><div class="m-title">Home</div><div class="m-meta">300L · 1st Semester</div></div><div class="m-bell">🔔<b>2</b></div></div>
-          <div class="m-body">
-            <div class="m-hello">Today</div>
-            <div class="m-sub">4 items · 1 due soon.</div>
-            <div class="m-tl done"><i></i><b>08:00 — Lab cancelled</b><span>CR notice · CSC 305</span></div>
-            <div class="m-tl"><i></i><b>10:00 — Guest lecture, Hall B</b><span>Lecture · CSC 307</span></div>
-            <div class="m-tl"><i></i><b>14:00 — Revise scheduling</b><span>My task · Medium</span></div>
-            <div class="m-tl"><i></i><b>Friday — Graphs assignment due</b><span>Assignment · CSC 303 · Hard</span></div>
-            <div class="m-sec">Latest from your CRs</div>
-            <div class="m-post"><div class="m-tags"><span class="m-tag blue">CSC 303</span><span class="m-tag dark">Task</span></div><b>Assignment 3 — Graphs due Friday</b><span>Adaeze O. · 2h ago</span></div>
+      <!-- ════════ 3 · FONTS ════════ -->
+      <section id="fonts">
+        <h2>3 · Typeface</h2>
+        <p class="sub">
+          One family app-wide, two weights. Shown in a real headline + body.
+        </p>
+        <div class="grid g4" id="font-grid"></div>
+      </section>
+
+      <!-- ════════ 4 · TABS ════════ -->
+      <section id="tabs">
+        <h2>4 · Tab bar style</h2>
+        <p class="sub">
+          Five tabs: Home · Plan · Files · CGPA · You. Tap inside a mock to feel
+          it.
+        </p>
+        <div class="grid g2">
+          <div class="card" data-tabs="T1">
+            <h3><span class="tag">T1</span>Classic</h3>
+            <p class="line">
+              Icon + label. Familiar, zero learning curve. (Current app.)
+            </p>
+            <div class="phone">
+              <div class="tabbar">
+                <div class="tb on"><i>⌂</i>Home</div>
+                <div class="tb"><i>✓</i>Plan</div>
+                <div class="tb"><i>▤</i>Files</div>
+                <div class="tb"><i>◔</i>CGPA</div>
+                <div class="tb"><i>○</i>You</div>
+              </div>
+            </div>
+            <button class="pick-btn">Use this style</button>
+          </div>
+          <div class="card" data-tabs="T2">
+            <h3><span class="tag">T2</span>Floating dock</h3>
+            <p class="line">
+              Detached pill, soft shadow. Modern, premium feel.
+            </p>
+            <div class="phone">
+              <div class="dock-wrap">
+                <div class="dock">
+                  <div class="tb on">⌂</div>
+                  <div class="tb">✓</div>
+                  <div class="tb">▤</div>
+                  <div class="tb">◔</div>
+                  <div class="tb">○</div>
+                </div>
+              </div>
+            </div>
+            <button class="pick-btn">Use this style</button>
+          </div>
+          <div class="card" data-tabs="T3">
+            <h3><span class="tag">T3</span>Minimal dots</h3>
+            <p class="line">Icons only, dot indicator. Quiet, content-first.</p>
+            <div class="phone">
+              <div class="dotsbar">
+                <div class="tb on">⌂<u>•</u></div>
+                <div class="tb">✓<u>•</u></div>
+                <div class="tb">▤<u>•</u></div>
+                <div class="tb">◔<u>•</u></div>
+                <div class="tb">○<u>•</u></div>
+              </div>
+            </div>
+            <button class="pick-btn">Use this style</button>
+          </div>
+          <div class="card" data-tabs="T4">
+            <h3><span class="tag">T4</span>Center action</h3>
+            <p class="line">
+              Raised + button for “New task”. Fastest path to the core action.
+            </p>
+            <div class="phone">
+              <div class="fabbar">
+                <div class="tb on"><i>⌂</i>Home</div>
+                <div class="tb"><i>✓</i>Plan</div>
+                <div class="fab"><b>+</b></div>
+                <div class="tb"><i>◔</i>CGPA</div>
+                <div class="tb"><i>○</i>You</div>
+              </div>
+            </div>
+            <button class="pick-btn">Use this style</button>
           </div>
         </div>
-        <button class="pick-btn">Use this layout</button>
-      </div>
+      </section>
 
-      <div class="card" data-home="V4">
-        <h3><span class="tag">V4</span>Quiet minimal</h3>
-        <p class="line">Maximum whitespace, hairlines, zero noise. Calm by design.</p>
-        <div class="phone">
-          <div class="m-head"><div class="m-logo">S</div><div><div class="m-title">Home</div><div class="m-meta">300L · 1st Semester</div></div><div class="m-bell">🔔<b>2</b></div></div>
-          <div class="m-body">
-            <div class="m-hello" style="font-size:19px">Good morning, John.</div>
-            <div class="m-sub">One thing needs you today.</div>
-            <div class="m-caps">Up next</div>
-            <div class="m-outline"><span class="m-tag blue">CSC 303 · DUE IN 2 DAYS</span><b>Assignment 3 — Graphs due Friday</b><span style="font-size:11px;color:var(--muted)">View post ›</span></div>
-            <div class="m-links"><span>Calendar</span><span>New task</span><span>Files</span><span>CGPA</span></div>
-            <div class="m-caps">Level feed</div>
-            <div class="m-feedrow"><div><b>Mid-semester test Thursday</b><span>CSC 301 · 5h ago</span></div><span>›</span></div>
-            <div class="m-feedrow"><div><b>Guest lecture moved to Hall B</b><span>CSC 307 · 1d ago</span></div><span>›</span></div>
-            <div class="m-feedrow"><div><b>Lab session cancelled</b><span>CSC 305 · 2d ago</span></div><span>›</span></div>
+      <!-- ════════ 5 · HOME ════════ -->
+      <section id="home">
+        <h2>5 · Home dashboard</h2>
+        <p class="sub">
+          Four arrangements of the same content. All live in your picked color +
+          font.
+        </p>
+        <div class="grid g2">
+          <div class="card" data-home="V1">
+            <h3>
+              <span class="tag">V1</span>Focus
+              <span style="font-size: 12px; color: var(--muted)"
+                >(current app)</span
+              >
+            </h3>
+            <p class="line">
+              One urgent hero, stats, plan bar, shortcuts, feed.
+            </p>
+            <div class="phone">
+              <div class="m-head">
+                <div class="m-logo">S</div>
+                <div>
+                  <div class="m-title">Home</div>
+                  <div class="m-meta">300L · 1st Semester</div>
+                </div>
+                <div class="m-bell">🔔<b>2</b></div>
+              </div>
+              <div class="m-body">
+                <div class="m-hello">Good morning, John 👋</div>
+                <div class="m-sub">Here's your level at a glance.</div>
+                <div class="m-hero">
+                  <div class="k">
+                    <span>UP NEXT · CSC 303</span><span>⏰ in 2 days</span>
+                  </div>
+                  <div class="t">Assignment 3 — Graphs due Friday</div>
+                  <div class="c">View post ›</div>
+                </div>
+                <div class="m-stats">
+                  <div class="m-stat"><b>2</b><span>Due soon</span></div>
+                  <div class="m-stat"><b>2</b><span>Unread</span></div>
+                  <div class="m-stat"><b>1/3</b><span>Tasks</span></div>
+                </div>
+                <div class="m-plan">
+                  <div class="r">
+                    <span>Today's plan</span><span>Keep going ›</span>
+                  </div>
+                  <div class="m-bar"><i></i></div>
+                </div>
+                <div class="m-sec">Quick actions</div>
+                <div class="m-actions">
+                  <div class="m-act"><i>📅</i><span>Calendar</span></div>
+                  <div class="m-act"><i>＋</i><span>New task</span></div>
+                  <div class="m-act"><i>▤</i><span>Files</span></div>
+                  <div class="m-act"><i>◔</i><span>CGPA</span></div>
+                </div>
+                <div class="m-sec">Latest from your CRs</div>
+                <div class="m-chips">
+                  <span class="m-chip on">All</span
+                  ><span class="m-chip">Tasks</span
+                  ><span class="m-chip">Tests</span>
+                </div>
+                <div class="m-post">
+                  <div class="m-tags">
+                    <span class="m-tag blue">CSC 303</span
+                    ><span class="m-tag dark">Task</span>
+                  </div>
+                  <b>Assignment 3 — Graphs due Friday</b
+                  ><span>Adaeze O. · 2h ago</span>
+                </div>
+                <div class="m-post">
+                  <div class="m-tags">
+                    <span class="m-tag blue">CSC 301</span
+                    ><span class="m-tag dark">Test</span>
+                  </div>
+                  <b>Mid-semester test Thursday</b
+                  ><span>Adaeze O. · 5h ago</span>
+                </div>
+              </div>
+            </div>
+            <button class="pick-btn">Use this layout</button>
+          </div>
+
+          <div class="card" data-home="V2">
+            <h3><span class="tag">V2</span>Command grid</h3>
+            <p class="line">
+              Stat tiles first — glanceable, dense, power-user friendly.
+            </p>
+            <div class="phone">
+              <div class="m-head">
+                <div class="m-logo">S</div>
+                <div>
+                  <div class="m-title">Home</div>
+                  <div class="m-meta">300L · 1st Semester</div>
+                </div>
+                <div class="m-bell">🔔<b>2</b></div>
+              </div>
+              <div class="m-body">
+                <div class="m-hello">Good morning, John 👋</div>
+                <div class="m-sub">Tuesday, Week 6.</div>
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 8px;
+                    margin-bottom: 10px;
+                  "
+                >
+                  <div class="m-tile" style="background: var(--c-primary)">
+                    <b>2</b><span>Due soon</span>
+                  </div>
+                  <div class="m-tile" style="background: var(--c-dark)">
+                    <b>2</b><span>Unread alerts</span>
+                  </div>
+                  <div class="m-tile" style="background: #1b9c6b">
+                    <b>1/3</b><span>Tasks done</span>
+                  </div>
+                  <div class="m-tile" style="background: var(--ink)">
+                    <b>4.03</b><span>CGPA</span>
+                  </div>
+                </div>
+                <div class="m-sec">Today</div>
+                <div class="m-row2">
+                  <div class="m-dot"></div>
+                  <div>
+                    <b>10:00 — CSC 307 guest lecture</b
+                    ><span>Hall B · attendance taken</span>
+                  </div>
+                </div>
+                <div class="m-row2">
+                  <div class="m-dot" style="background: var(--c-pale)"></div>
+                  <div>
+                    <b>Finish graph assignment</b
+                    ><span>Due in 2 days · Hard</span>
+                  </div>
+                </div>
+                <div class="m-row2">
+                  <div class="m-dot" style="background: #1b9c6b"></div>
+                  <div>
+                    <b>Revise scheduling algorithms</b><span>Done ✓</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button class="pick-btn">Use this layout</button>
+          </div>
+
+          <div class="card" data-home="V3">
+            <h3><span class="tag">V3</span>Day timeline</h3>
+            <p class="line">
+              Your day as a story — posts + tasks merged in time order.
+            </p>
+            <div class="phone">
+              <div class="m-head">
+                <div class="m-logo">S</div>
+                <div>
+                  <div class="m-title">Home</div>
+                  <div class="m-meta">300L · 1st Semester</div>
+                </div>
+                <div class="m-bell">🔔<b>2</b></div>
+              </div>
+              <div class="m-body">
+                <div class="m-hello">Today</div>
+                <div class="m-sub">4 items · 1 due soon.</div>
+                <div class="m-tl done">
+                  <i></i><b>08:00 — Lab cancelled</b
+                  ><span>CR notice · CSC 305</span>
+                </div>
+                <div class="m-tl">
+                  <i></i><b>10:00 — Guest lecture, Hall B</b
+                  ><span>Lecture · CSC 307</span>
+                </div>
+                <div class="m-tl">
+                  <i></i><b>14:00 — Revise scheduling</b
+                  ><span>My task · Medium</span>
+                </div>
+                <div class="m-tl">
+                  <i></i><b>Friday — Graphs assignment due</b
+                  ><span>Assignment · CSC 303 · Hard</span>
+                </div>
+                <div class="m-sec">Latest from your CRs</div>
+                <div class="m-post">
+                  <div class="m-tags">
+                    <span class="m-tag blue">CSC 303</span
+                    ><span class="m-tag dark">Task</span>
+                  </div>
+                  <b>Assignment 3 — Graphs due Friday</b
+                  ><span>Adaeze O. · 2h ago</span>
+                </div>
+              </div>
+            </div>
+            <button class="pick-btn">Use this layout</button>
+          </div>
+
+          <div class="card" data-home="V4">
+            <h3><span class="tag">V4</span>Quiet minimal</h3>
+            <p class="line">
+              Maximum whitespace, hairlines, zero noise. Calm by design.
+            </p>
+            <div class="phone">
+              <div class="m-head">
+                <div class="m-logo">S</div>
+                <div>
+                  <div class="m-title">Home</div>
+                  <div class="m-meta">300L · 1st Semester</div>
+                </div>
+                <div class="m-bell">🔔<b>2</b></div>
+              </div>
+              <div class="m-body">
+                <div class="m-hello" style="font-size: 19px">
+                  Good morning, John.
+                </div>
+                <div class="m-sub">One thing needs you today.</div>
+                <div class="m-caps">Up next</div>
+                <div class="m-outline">
+                  <span class="m-tag blue">CSC 303 · DUE IN 2 DAYS</span
+                  ><b>Assignment 3 — Graphs due Friday</b
+                  ><span style="font-size: 11px; color: var(--muted)"
+                    >View post ›</span
+                  >
+                </div>
+                <div class="m-links">
+                  <span>Calendar</span><span>New task</span><span>Files</span
+                  ><span>CGPA</span>
+                </div>
+                <div class="m-caps">Level feed</div>
+                <div class="m-feedrow">
+                  <div>
+                    <b>Mid-semester test Thursday</b
+                    ><span>CSC 301 · 5h ago</span>
+                  </div>
+                  <span>›</span>
+                </div>
+                <div class="m-feedrow">
+                  <div>
+                    <b>Guest lecture moved to Hall B</b
+                    ><span>CSC 307 · 1d ago</span>
+                  </div>
+                  <span>›</span>
+                </div>
+                <div class="m-feedrow">
+                  <div>
+                    <b>Lab session cancelled</b><span>CSC 305 · 2d ago</span>
+                  </div>
+                  <span>›</span>
+                </div>
+              </div>
+            </div>
+            <button class="pick-btn">Use this layout</button>
           </div>
         </div>
-        <button class="pick-btn">Use this layout</button>
+      </section>
+
+      <div id="final">
+        <h2>Your current picks</h2>
+        <p id="final-text"></p>
+        <p style="margin-top: 8px">
+          Send me these five and I'll apply them across the app (theme, splash,
+          headers, tabs, home).
+        </p>
       </div>
 
+      <footer>
+        SIA design studio · single file · works offline (fonts need internet,
+        graceful fallback otherwise).
+      </footer>
     </div>
-  </section>
 
-  <div id="final">
-    <h2>Your current picks</h2>
-    <p id="final-text"></p>
-    <p style="margin-top:8px">Send me these five and I'll apply them across the app (theme, splash, headers, tabs, home).</p>
-  </div>
+    <script>
+      // ── options ──
+      const COLORS = {
+        royal: {
+          n: "Royal Navy",
+          p: "#1E3A8A",
+          d: "#152B66",
+          s: "#E9EFFA",
+          l: "#B9C9EC",
+        },
+        midnight: {
+          n: "Midnight",
+          p: "#131F45",
+          d: "#0B1330",
+          s: "#E9EBF5",
+          l: "#AEB9D8",
+        },
+        steel: {
+          n: "Steel Blue",
+          p: "#2F4D7D",
+          d: "#1F3559",
+          s: "#EAF0F8",
+          l: "#B4C6E2",
+        },
+        ocean: {
+          n: "Deep Ocean",
+          p: "#0B3B8F",
+          d: "#072A66",
+          s: "#E8F0FD",
+          l: "#A9C4F0",
+        },
+      };
+      const FONTS = {
+        jakarta: {
+          n: "Plus Jakarta Sans",
+          f: '"Plus Jakarta Sans", system-ui, sans-serif',
+          d: "Geometric-humanist. Friendly + credible — the edtech staple. (Currently in the app.)",
+        },
+        sora: {
+          n: "Sora",
+          f: "Sora, system-ui, sans-serif",
+          d: "Modern, techy, confident. Great for a Software Engineering crowd.",
+        },
+        manrope: {
+          n: "Manrope",
+          f: "Manrope, system-ui, sans-serif",
+          d: "Clean geometric workhorse. Quiet and highly legible.",
+        },
+        nunito: {
+          n: "Nunito",
+          f: "Nunito, system-ui, sans-serif",
+          d: "Rounded and warm — the Duolingo energy. Playful, encouraging.",
+        },
+      };
+      const TABS = {
+        T1: "Classic",
+        T2: "Floating dock",
+        T3: "Minimal dots",
+        T4: "Center action",
+      };
+      const HOMES = {
+        V1: "Focus",
+        V2: "Command grid",
+        V3: "Day timeline",
+        V4: "Quiet minimal",
+      };
+      const LOGOS = {
+        A: "Verified Check",
+        B: "Ascending Path",
+        C: "Cap Signal",
+      };
 
-  <footer>SIA design studio · single file · works offline (fonts need internet, graceful fallback otherwise).</footer>
-</div>
+      // ── state (persisted) ──
+      const store = {
+        get(k, fb) {
+          try {
+            return localStorage.getItem("sia-" + k) || fb;
+          } catch (e) {
+            return fb;
+          }
+        },
+        set(k, v) {
+          try {
+            localStorage.setItem("sia-" + k, v);
+          } catch (e) {}
+        },
+      };
+      const state = {
+        color: store.get("color", "royal"),
+        logo: store.get("logo", "C"),
+        font: store.get("font", "jakarta"),
+        tabs: store.get("tabs", "T1"),
+        home: store.get("home", "V1"),
+      };
 
-<script>
-  // ── options ──
-  const COLORS = {
-    royal:    { n: "Royal Navy",  p: "#1E3A8A", d: "#152B66", s: "#E9EFFA", l: "#B9C9EC" },
-    midnight: { n: "Midnight",    p: "#131F45", d: "#0B1330", s: "#E9EBF5", l: "#AEB9D8" },
-    steel:    { n: "Steel Blue",  p: "#2F4D7D", d: "#1F3559", s: "#EAF0F8", l: "#B4C6E2" },
-    ocean:    { n: "Deep Ocean",  p: "#0B3B8F", d: "#072A66", s: "#E8F0FD", l: "#A9C4F0" },
-  };
-  const FONTS = {
-    jakarta: { n: "Plus Jakarta Sans", f: '"Plus Jakarta Sans", system-ui, sans-serif', d: "Geometric-humanist. Friendly + credible — the edtech staple. (Currently in the app.)" },
-    sora:    { n: "Sora", f: 'Sora, system-ui, sans-serif', d: "Modern, techy, confident. Great for a Software Engineering crowd." },
-    manrope: { n: "Manrope", f: 'Manrope, system-ui, sans-serif', d: "Clean geometric workhorse. Quiet and highly legible." },
-    nunito:  { n: "Nunito", f: 'Nunito, system-ui, sans-serif', d: "Rounded and warm — the Duolingo energy. Playful, encouraging." },
-  };
-  const TABS = { T1: "Classic", T2: "Floating dock", T3: "Minimal dots", T4: "Center action" };
-  const HOMES = { V1: "Focus", V2: "Command grid", V3: "Day timeline", V4: "Quiet minimal" };
-  const LOGOS = { A: "Verified Check", B: "Ascending Path", C: "Cap Signal" };
+      const root = document.documentElement;
 
-  // ── state (persisted) ──
-  const store = {
-    get(k, fb) { try { return localStorage.getItem("sia-" + k) || fb; } catch (e) { return fb; } },
-    set(k, v) { try { localStorage.setItem("sia-" + k, v); } catch (e) {} },
-  };
-  const state = {
-    color: store.get("color", "royal"),
-    logo: store.get("logo", "C"),
-    font: store.get("font", "jakarta"),
-    tabs: store.get("tabs", "T1"),
-    home: store.get("home", "V1"),
-  };
+      function applyColor() {
+        const c = COLORS[state.color];
+        root.style.setProperty("--c-primary", c.p);
+        root.style.setProperty("--c-dark", c.d);
+        root.style.setProperty("--c-soft", c.s);
+        root.style.setProperty("--c-pale", c.l);
+      }
+      function applyFont() {
+        root.style.setProperty("--font", FONTS[state.font].f);
+      }
 
-  const root = document.documentElement;
+      function markSelected(attr, val) {
+        document.querySelectorAll(`[data-${attr}]`).forEach((el) => {
+          const on = el.dataset[attr] === val;
+          el.classList.toggle("selected", on);
+          const b = el.querySelector(".pick-btn");
+          if (b)
+            b.textContent = on
+              ? "✓ Selected"
+              : b.dataset.label || (b.dataset.label = b.textContent);
+        });
+      }
 
-  function applyColor() {
-    const c = COLORS[state.color];
-    root.style.setProperty("--c-primary", c.p);
-    root.style.setProperty("--c-dark", c.d);
-    root.style.setProperty("--c-soft", c.s);
-    root.style.setProperty("--c-pale", c.l);
-  }
-  function applyFont() { root.style.setProperty("--font", FONTS[state.font].f); }
+      function summary() {
+        document.getElementById("summary").textContent =
+          `${COLORS[state.color].n} · Logo ${state.logo} · ${FONTS[state.font].n} · ${state.tabs} · ${state.home}`;
+        document.getElementById("final-text").innerHTML =
+          `Color: <code>${COLORS[state.color].n} (${COLORS[state.color].p})</code> · ` +
+          `Logo: <code>${state.logo} — ${LOGOS[state.logo]}</code> · ` +
+          `Font: <code>${FONTS[state.font].n}</code> · ` +
+          `Tabs: <code>${state.tabs} — ${TABS[state.tabs]}</code> · ` +
+          `Home: <code>${state.home} — ${HOMES[state.home]}</code>`;
+      }
 
-  function markSelected(attr, val) {
-    document.querySelectorAll(`[data-${attr}]`).forEach(el => {
-      const on = el.dataset[attr] === val;
-      el.classList.toggle("selected", on);
-      const b = el.querySelector(".pick-btn");
-      if (b) b.textContent = on ? "✓ Selected" : b.dataset.label || (b.dataset.label = b.textContent);
-    });
-  }
+      function renderAll() {
+        applyColor();
+        applyFont();
+        markSelected("color", state.color);
+        markSelected("logo", state.logo);
+        markSelected("font", state.font);
+        markSelected("tabs", state.tabs);
+        markSelected("home", state.home);
+        summary();
+      }
 
-  function summary() {
-    document.getElementById("summary").textContent =
-      `${COLORS[state.color].n} · Logo ${state.logo} · ${FONTS[state.font].n} · ${state.tabs} · ${state.home}`;
-    document.getElementById("final-text").innerHTML =
-      `Color: <code>${COLORS[state.color].n} (${COLORS[state.color].p})</code> · ` +
-      `Logo: <code>${state.logo} — ${LOGOS[state.logo]}</code> · ` +
-      `Font: <code>${FONTS[state.font].n}</code> · ` +
-      `Tabs: <code>${state.tabs} — ${TABS[state.tabs]}</code> · ` +
-      `Home: <code>${state.home} — ${HOMES[state.home]}</code>`;
-  }
-
-  function renderAll() { applyColor(); applyFont(); markSelected("color", state.color);
-    markSelected("logo", state.logo); markSelected("font", state.font);
-    markSelected("tabs", state.tabs); markSelected("home", state.home); summary(); }
-
-  // ── build color + font cards ──
-  const cg = document.getElementById("color-grid");
-  Object.entries(COLORS).forEach(([id, c]) => {
-    const el = document.createElement("div");
-    el.className = "card"; el.dataset.color = id;
-    el.innerHTML = `<div class="swatches">
+      // ── build color + font cards ──
+      const cg = document.getElementById("color-grid");
+      Object.entries(COLORS).forEach(([id, c]) => {
+        const el = document.createElement("div");
+        el.className = "card";
+        el.dataset.color = id;
+        el.innerHTML = `<div class="swatches">
         <span style="background:${c.p}"></span><span style="background:${c.d}"></span>
         <span style="background:${c.s};border:1px solid #E2E9F6"></span><span style="background:${c.l}"></span>
       </div><h3>${c.n}</h3><p class="line">Primary · dark · tint · pale</p>
       <p class="hex">${c.p} · ${c.d}</p><div style="height:10px"></div>
       <button class="pick-btn">Use this blue</button>`;
-    el.querySelector(".pick-btn").dataset.label = "Use this blue";
-    cg.appendChild(el);
-  });
-  const fg = document.getElementById("font-grid");
-  Object.entries(FONTS).forEach(([id, f]) => {
-    const el = document.createElement("div");
-    el.className = "card"; el.dataset.font = id;
-    el.innerHTML = `<div class="aa" style="font-family:${f.f}">Aa</div>
+        el.querySelector(".pick-btn").dataset.label = "Use this blue";
+        cg.appendChild(el);
+      });
+      const fg = document.getElementById("font-grid");
+      Object.entries(FONTS).forEach(([id, f]) => {
+        const el = document.createElement("div");
+        el.className = "card";
+        el.dataset.font = id;
+        el.innerHTML = `<div class="aa" style="font-family:${f.f}">Aa</div>
       <h3 style="font-family:${f.f}">${f.n}</h3>
       <p class="sample-h" style="font-family:${f.f}">Good morning, John</p>
       <p class="sample-b" style="font-family:${f.f}">Your level, all in one place.</p>
       <div style="height:12px"></div><button class="pick-btn">Use this font</button>`;
-    el.querySelector(".pick-btn").dataset.label = "Use this font";
-    fg.appendChild(el);
-  });
+        el.querySelector(".pick-btn").dataset.label = "Use this font";
+        fg.appendChild(el);
+      });
 
-  // ── wire picks ──
-  function wire(attr, key) {
-    document.querySelectorAll(`[data-${attr}]`).forEach(el => {
-      const btn = el.querySelector(".pick-btn");
-      if (btn && !btn.dataset.label) btn.dataset.label = btn.textContent;
-      const pick = ev => { ev.stopPropagation(); state[key] = el.dataset[attr]; store.set(key, state[key]); renderAll(); };
-      el.addEventListener("click", pick);
-      if (btn) btn.addEventListener("click", pick);
-    });
-  }
-  wire("color", "color"); wire("logo", "logo"); wire("font", "font");
-  wire("tabs", "tabs"); wire("home", "home");
+      // ── wire picks ──
+      function wire(attr, key) {
+        document.querySelectorAll(`[data-${attr}]`).forEach((el) => {
+          const btn = el.querySelector(".pick-btn");
+          if (btn && !btn.dataset.label) btn.dataset.label = btn.textContent;
+          const pick = (ev) => {
+            ev.stopPropagation();
+            state[key] = el.dataset[attr];
+            store.set(key, state[key]);
+            renderAll();
+          };
+          el.addEventListener("click", pick);
+          if (btn) btn.addEventListener("click", pick);
+        });
+      }
+      wire("color", "color");
+      wire("logo", "logo");
+      wire("font", "font");
+      wire("tabs", "tabs");
+      wire("home", "home");
 
-  // tab-bar feel: tap items to preview active state
-  document.querySelectorAll(".tabbar, .dock, .dotsbar, .fabbar").forEach(bar => {
-    bar.querySelectorAll(".tb").forEach(tb => tb.addEventListener("click", ev => {
-      ev.stopPropagation();
-      bar.querySelectorAll(".tb").forEach(x => x.classList.remove("on"));
-      tb.classList.add("on");
-    }));
-  });
+      // tab-bar feel: tap items to preview active state
+      document
+        .querySelectorAll(".tabbar, .dock, .dotsbar, .fabbar")
+        .forEach((bar) => {
+          bar.querySelectorAll(".tb").forEach((tb) =>
+            tb.addEventListener("click", (ev) => {
+              ev.stopPropagation();
+              bar
+                .querySelectorAll(".tb")
+                .forEach((x) => x.classList.remove("on"));
+              tb.classList.add("on");
+            }),
+          );
+        });
 
-  // download logo SVGs with the CURRENT hexes baked in (no var() leftovers)
-  document.querySelectorAll("[data-dl]").forEach(btn => btn.addEventListener("click", ev => {
-    ev.stopPropagation();
-    const svg = document.getElementById(btn.dataset.dl);
-    const cardLogo = btn.closest(".card").dataset.logo || state.logo;
-    const c = COLORS[state.color];
-    let src = new XMLSerializer().serializeToString(svg)
-      .replaceAll("var(--c-primary)", c.p).replaceAll("var(--c-dark)", c.d)
-      .replaceAll("var(--c-pale)", c.l);
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([src], { type: "image/svg+xml" }));
-    a.download = `sia-logo-${cardLogo.toLowerCase()}-${state.color}.svg`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }));
+      // download logo SVGs with the CURRENT hexes baked in (no var() leftovers)
+      document.querySelectorAll("[data-dl]").forEach((btn) =>
+        btn.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          const svg = document.getElementById(btn.dataset.dl);
+          const cardLogo = btn.closest(".card").dataset.logo || state.logo;
+          const c = COLORS[state.color];
+          let src = new XMLSerializer()
+            .serializeToString(svg)
+            .replaceAll("var(--c-primary)", c.p)
+            .replaceAll("var(--c-dark)", c.d)
+            .replaceAll("var(--c-pale)", c.l);
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(
+            new Blob([src], { type: "image/svg+xml" }),
+          );
+          a.download = `sia-logo-${cardLogo.toLowerCase()}-${state.color}.svg`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+        }),
+      );
 
-  renderAll();
-</script>
-</body>
+      renderAll();
+    </script>
+  </body>
 </html>
