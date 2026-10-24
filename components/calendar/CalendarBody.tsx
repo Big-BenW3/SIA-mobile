@@ -84,14 +84,12 @@ export function CalendarBody({ base }: { base: "(student)" | "(cr)" }) {
       if (!d) continue;
       const k = dayKey(d);
       if (!map.has(k)) map.set(k, []);
-      map
-        .get(k)!
-        .push({
-          id: p.id,
-          title: p.title,
-          courseCode: p.courseCode ?? "",
-          dueDate: p.dueDate as string,
-        });
+      map.get(k)!.push({
+        id: p.id,
+        title: p.title,
+        courseCode: p.courseCode ?? "",
+        dueDate: p.dueDate as string,
+      });
     }
     return map;
   }, [posts]);

@@ -1,120 +1,100 @@
 import Svg, { Circle, G, Path, Polygon } from "react-native-svg";
 import { theme } from "@/constants/theme";
 
-// Brand marks for SIA (Student Itinerary App).
-// Goal recap: one trusted home per level (100L–500L) where verified CR
-// updates replace scattered chats, plus a private AI study planner.
-// All three concepts share the same palette: white + sleek dark blue (#1E3A8A).
-// Rendered as vectors so they stay crisp from tab icon to splash screen.
+// Final brand: SuperStack.
+// The symbol combines a stacked-book outline with a rising star, expressing
+// learning momentum, organized knowledge, and a premium academic workflow.
 
-const BLUE = theme.colors.primary; // #1E3A8A
-const BLUE_DARK = theme.colors.primaryDark; // #152B66
-const BLUE_PALE = theme.colors.primaryMuted; // #B9C9EC
+const NAVY = theme.colors.primary;
+const NAVY_DARK = theme.colors.primaryDark;
+const NAVY_PALE = theme.colors.primaryMuted;
 const INK = theme.colors.text;
 
 export type LogoChoice = "A" | "B" | "C";
 
-/* ————————————————————————————————————————————————————————————————
-   CONCEPT A — "Verified Check"
-   A pink squircle seal with a confident white check.
-   Stands for: verified CR posts, a single source of truth.
-   Personality: trustworthy, calm, official — the "stamp" of the level.
-———————————————————————————————————————————————————————————————— */
 export function LogoA({ size = 120 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 120 120">
       <Path
-        d="M22 8h76a14 14 0 0 1 14 14v76a14 14 0 0 1-14 14H22A14 14 0 0 1 8 98V22A14 14 0 0 1 22 8z"
-        fill={BLUE}
+        d="M32 26h44l18 18v52a12 12 0 0 1-12 12H32a12 12 0 0 1-12-12V38a12 12 0 0 1 12-12z"
+        fill={NAVY}
+        opacity={0.96}
       />
       <Path
-        d="M38 62l14 14 30-34"
+        d="M76 26v18h18"
         fill="none"
         stroke="#fff"
-        strokeWidth={13}
+        strokeWidth={5}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      <Path
+        d="M38 58h32M38 70h26M38 82h18"
+        stroke="#fff"
+        strokeWidth={6}
+        strokeLinecap="round"
+      />
+      <Circle cx={92} cy={34} r={12} fill="#F9C74F" />
+      <Path
+        d="M92 19v30M77 34h30M81 25l22 18M81 43l22-18"
+        stroke="#F9C74F"
+        strokeWidth={3}
+        strokeLinecap="round"
+      />
     </Svg>
   );
 }
 
-/* ————————————————————————————————————————————————————————————————
-   CONCEPT B — "Ascending Path"
-   Three dots climb a route curve: 100L → 500L, easy → hard.
-   Stands for: the AI-arranged itinerary + CGPA progression.
-   Personality: ambitious, momentum-driven — "keep climbing."
-———————————————————————————————————————————————————————————————— */
 export function LogoB({ size = 120 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 120 120">
-      {/* the route: dashed ink curve, travelled bottom-left → top-right */}
       <Path
-        d="M22 92C42 92 44 70 62 66c18-4 22-26 36-30"
-        fill="none"
-        stroke={INK}
-        strokeWidth={6}
-        strokeLinecap="round"
-        strokeDasharray="1 12"
+        d="M26 58l18-18 18 18 18-18 18 18v28a12 12 0 0 1-12 12H38a12 12 0 0 1-12-12V58z"
+        fill={NAVY}
       />
-      {/* milestones: pale → pink → deep, growing with progress */}
-      <Circle cx={22} cy={92} r={10} fill={BLUE_PALE} />
-      <Circle cx={62} cy={66} r={11} fill={BLUE} />
-      <G>
-        <Circle cx={94} cy={34} r={15} fill={BLUE_DARK} />
-        <Path
-          d="M87 34l5 5 9-10"
-          fill="none"
-          stroke="#fff"
-          strokeWidth={4.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </G>
+      <Path
+        d="M26 58l18-18 18 18 18-18 18 18"
+        fill="none"
+        stroke="#fff"
+        strokeWidth={5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle cx={92} cy={26} r={11} fill="#F9C74F" />
+      <Path
+        d="M92 12v28M78 26h28"
+        stroke="#F9C74F"
+        strokeWidth={4}
+        strokeLinecap="round"
+      />
     </Svg>
   );
 }
 
-/* ————————————————————————————————————————————————————————————————
-   CONCEPT C — "Cap Signal"
-   A graduation cap broadcasting signal arcs.
-   Stands for: academia + push-first alerts the moment a CR posts.
-   Personality: collegiate, alive — "you'll never miss a thing."
-———————————————————————————————————————————————————————————————— */
 export function LogoC({ size = 120 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 120 120">
-      {/* signal arcs above the cap */}
       <Path
-        d="M38 34a32 32 0 0 1 44 0"
+        d="M28 42l32-20 32 20-32 20-32-20zm0 18l32 20 32-20"
         fill="none"
-        stroke={BLUE_PALE}
-        strokeWidth={7}
+        stroke={NAVY}
+        strokeWidth={8}
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
+      <Path d="M60 62v20" stroke={NAVY} strokeWidth={8} strokeLinecap="round" />
+      <Path d="M42 82h36" stroke={NAVY} strokeWidth={8} strokeLinecap="round" />
+      <Circle cx={92} cy={30} r={11} fill="#F9C74F" />
       <Path
-        d="M48 24a18 18 0 0 1 24 0"
-        fill="none"
-        stroke={BLUE}
-        strokeWidth={7}
+        d="M92 16v28M78 30h28"
+        stroke="#F9C74F"
+        strokeWidth={4}
         strokeLinecap="round"
       />
-      {/* mortarboard */}
-      <Polygon points="60,52 104,70 60,88 16,70" fill={BLUE} />
-      {/* head + tassel */}
-      <Path d="M40 78v10c0 9 40 9 40 0V78l-20 9z" fill={BLUE_DARK} />
-      <Path
-        d="M100 71v18"
-        stroke={BLUE_DARK}
-        strokeWidth={5}
-        strokeLinecap="round"
-      />
-      <Circle cx={100} cy={93} r={6} fill={BLUE_DARK} />
     </Svg>
   );
 }
 
-/** Render the chosen mark (or nothing) at small sizes, e.g. the header. */
 export function LogoMark({
   choice,
   size = 36,
@@ -125,5 +105,25 @@ export function LogoMark({
   if (choice === "A") return <LogoA size={size} />;
   if (choice === "B") return <LogoB size={size} />;
   if (choice === "C") return <LogoC size={size} />;
-  return null;
+  return (
+    <Svg width={size} height={size} viewBox="0 0 120 120">
+      <Path
+        d="M28 42l32-20 32 20-32 20-32-20zm0 18l32 20 32-20"
+        fill="none"
+        stroke={NAVY}
+        strokeWidth={8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path d="M60 62v20" stroke={NAVY} strokeWidth={8} strokeLinecap="round" />
+      <Path d="M42 82h36" stroke={NAVY} strokeWidth={8} strokeLinecap="round" />
+      <Circle cx={92} cy={30} r={11} fill="#F9C74F" />
+      <Path
+        d="M92 16v28M78 30h28"
+        stroke="#F9C74F"
+        strokeWidth={4}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
 }

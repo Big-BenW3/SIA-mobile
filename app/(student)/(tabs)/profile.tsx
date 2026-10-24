@@ -299,11 +299,11 @@ export default function StudentProfile() {
           />
           <Divider />
           <Row
-            label="About SIA"
+            label="About SuperStack"
             value="v1.0"
             onPress={() =>
               Alert.alert(
-                "About SIA",
+                "About SuperStack",
                 "One trusted home per level: verified CR updates, a personal study planner, course files and a CGPA tracker.",
               )
             }
@@ -335,7 +335,7 @@ export default function StudentProfile() {
             <Text style={styles.logoutText}>Log out</Text>
           </Pressable>
         </Card>
-        <Text style={styles.version}>SIA · v1.0</Text>
+        <Text style={styles.version}>SuperStack · v1.0</Text>
       </ScrollView>
 
       {/* ── Profile update sheet (name editable, level read-only) ── */}

@@ -21,8 +21,6 @@ export function AppHeader({
   const router = useRouter();
   const { setNotificationsOpen, unread } = useNotificationStore();
   const session = useSessionStore();
-  // Real academic context only — no hard-coded fallback. Before the session
-  // load resolves the line is simply absent rather than lying about a level.
   const meta = [
     session.levelName,
     session.semester ? `${session.semester} Semester` : null,
@@ -42,11 +40,11 @@ export function AppHeader({
           >
             <Text style={styles.backText}>‹</Text>
           </Pressable>
-        ) : choice ? (
-          // Live preview of the logo picked on the concept screen.
-          <LogoMark choice={choice} size={40} />
         ) : (
-          <Text style={styles.logo}>SIA</Text>
+          <View style={styles.brandBox}>
+            <LogoMark choice={choice ?? "C"} size={34} />
+            <Text style={styles.brandText}>SuperStack</Text>
+          </View>
         )}
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>{title}</Text>
@@ -79,16 +77,18 @@ const styles = themedStyles(() =>
       paddingVertical: theme.spacing.sm,
     },
     row: { flexDirection: "row", alignItems: "center", gap: 12 },
-    logo: {
-      backgroundColor: theme.colors.primary,
-      color: theme.colors.onPrimary,
+    brandBox: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      paddingRight: 6,
+    },
+    brandText: {
       ...theme.type.body,
+      color: theme.colors.text,
       fontFamily: theme.font.bold,
       fontWeight: "700",
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderRadius: theme.radius.md,
-      overflow: "hidden",
+      letterSpacing: -0.4,
     },
     back: {
       width: 44,

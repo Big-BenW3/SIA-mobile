@@ -5,6 +5,8 @@ import { theme } from "@/constants/theme";
 import { Button } from "@/components/shared/Button";
 import { WelcomeArt } from "@/components/illustrations/WelcomeArt";
 import { themedStyles } from "@/components/themedStyles";
+import { LogoMark } from "@/components/brand/Logos";
+import { useBrandStore } from "@/stores/brandStore";
 
 // ─── Welcome ────────────────────────────────────────────────────────
 // First screen a new student sees. One promise, one illustration, three
@@ -13,14 +15,15 @@ import { themedStyles } from "@/components/themedStyles";
 
 export default function Welcome() {
   const router = useRouter();
+  const { choice } = useBrandStore();
 
   return (
     <SafeAreaView style={styles.root} edges={["top", "bottom"]}>
       <View style={styles.brand}>
         <View style={styles.mark}>
-          <Text style={styles.markText}>SIA</Text>
+          <LogoMark choice={choice ?? "C"} size={26} />
         </View>
-        <Text style={styles.brandName}>Student Information &amp; Apps</Text>
+        <Text style={styles.brandName}>SuperStack</Text>
       </View>
 
       <View style={styles.hero}>
@@ -68,17 +71,12 @@ const styles = themedStyles(() =>
       paddingTop: theme.spacing.md,
     },
     mark: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: theme.colors.primaryMuted,
       borderRadius: theme.radius.sm,
-      paddingHorizontal: 10,
+      paddingHorizontal: 8,
       paddingVertical: 6,
-    },
-    markText: {
-      color: theme.colors.onPrimary,
-      fontSize: 14,
-      fontFamily: theme.font.bold,
-      fontWeight: "700",
-      letterSpacing: 1,
+      alignItems: "center",
+      justifyContent: "center",
     },
     brandName: { ...theme.type.caption, color: theme.colors.secondary },
 

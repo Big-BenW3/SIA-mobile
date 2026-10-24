@@ -18,10 +18,10 @@ export const colors = {
   sheet: "#FFFFFF",
   scrim: "rgba(16,24,40,0.45)",
   input: "#FFFFFF",
-  primary: "#000000", // solid ink: filled controls stay legible on white
-  primaryDark: "#040404",
-  primaryMuted: "#AEB9D8",
-  accent: "#131F45", // link / accent text sitting on a surface
+  primary: "#0F172A", // solid ink: filled controls stay legible on white
+  primaryDark: "#020817",
+  primaryMuted: "#A8B3C7",
+  accent: "#111827", // link / accent text sitting on a surface
   onPrimary: "#FFFFFF", // text and marks drawn on top of `primary`
   // The inverted chip: a solid block that flips with the scheme. Light mode
   // paints it ink with white text. Rule: never pair `text` with `onPrimary` —
@@ -29,9 +29,9 @@ export const colors = {
   inverseSurface: "#101828",
   onInverseSurface: "#FFFFFF",
   overlay: "rgba(16,24,40,0.45)", // modal scrim
-  text: "#101828", // 100% — headings
-  body: "rgba(16,24,40,0.8)", // 80% — body
-  secondary: "rgba(16,24,40,0.62)", // 62% — secondary
+  text: "#111827", // 100% — headings
+  body: "rgba(17,24,39,0.8)", // 80% — body
+  secondary: "rgba(17,24,39,0.62)", // 62% — secondary
   success: "#1B9C6B",
   warning: "#C77B0A",
   danger: "#D21F3C",
@@ -53,42 +53,42 @@ const scale = {
     // every tappable list row matches the tallest card (icon 48 + padding 24)
     rowMinHeight: 72,
   },
-  // Brand typeface (loaded in app/_layout.tsx). Two weights only.
+  // Final brand typeface. Space Grotesk gives the product a cleaner, more premium feel.
   font: {
-    regular: "Sora_400Regular",
-    bold: "Sora_700Bold",
+    regular: "SpaceGrotesk_400Regular",
+    bold: "SpaceGrotesk_700Bold",
   },
   // 4 sizes max: hero / title / body / caption. 2 weights: 400 / 700.
   type: {
     hero: {
       fontSize: 28,
       fontWeight: "700" as const,
-      fontFamily: "Sora_700Bold",
+      fontFamily: "SpaceGrotesk_700Bold",
       lineHeight: 34,
     },
     title: {
       fontSize: 20,
       fontWeight: "700" as const,
-      fontFamily: "Sora_700Bold",
+      fontFamily: "SpaceGrotesk_700Bold",
       lineHeight: 26,
     },
     body: {
       fontSize: 15,
       fontWeight: "400" as const,
-      fontFamily: "Sora_400Regular",
+      fontFamily: "SpaceGrotesk_400Regular",
       lineHeight: 22,
     },
     caption: {
       fontSize: 13,
       fontWeight: "400" as const,
-      fontFamily: "Sora_400Regular",
+      fontFamily: "SpaceGrotesk_400Regular",
       lineHeight: 18,
     },
   },
   shadow: {
     // soft blue-tinted shadow, never pure gray/black
     card: {
-      shadowColor: "#131F45",
+      shadowColor: "#0F172A",
       shadowOpacity: 0.08,
       shadowRadius: 16,
       shadowOffset: { width: 0, height: 8 },

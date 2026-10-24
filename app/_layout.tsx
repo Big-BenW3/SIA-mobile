@@ -1,8 +1,8 @@
 import {
-  Sora_400Regular,
-  Sora_700Bold,
+  SpaceGrotesk_400Regular,
+  SpaceGrotesk_700Bold,
   useFonts,
-} from "@expo-google-fonts/sora";
+} from "@expo-google-fonts/space-grotesk";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
@@ -20,9 +20,11 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
-  // Brand typeface: Sora (400 body / 700 headings — the only
-  // two weights used app-wide, per the 2-weight rule).
-  const [loaded] = useFonts({ Sora_400Regular, Sora_700Bold });
+  // Final brand typeface: Space Grotesk (400 body / 700 headings).
+  const [loaded] = useFonts({
+    SpaceGrotesk_400Regular,
+    SpaceGrotesk_700Bold,
+  });
 
   useEffect(() => {
     if (loaded) SplashScreen.hideAsync();

@@ -193,7 +193,7 @@ export default function CRProfile() {
             ])
           }
         />
-        <Text style={styles.version}>SIA · v1.0</Text>
+        <Text style={styles.version}>SuperStack · v1.0</Text>
       </ScrollView>
 
       {/* ── Change password sheet ── */}

@@ -120,14 +120,12 @@ export function deleteSemesterDb(id: string): void {
 
 // ── goals ──
 export function listGoals(): Goal[] {
-  return [...tables.goals.values()]
-    .sort(byCreated)
-    .map((r) => ({
-      id: r.id as string,
-      title: r.title as string,
-      detail: r.detail as string,
-      pct: r.pct as number,
-    }));
+  return [...tables.goals.values()].sort(byCreated).map((r) => ({
+    id: r.id as string,
+    title: r.title as string,
+    detail: r.detail as string,
+    pct: r.pct as number,
+  }));
 }
 
 export function insertGoal(title: string, detail: string): string {
