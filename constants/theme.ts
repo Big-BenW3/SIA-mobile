@@ -38,6 +38,20 @@ export const colors = {
   easy: "#1B9C6B",
   medium: "#C77B0A",
   hard: "#D21F3C",
+  // Brand gold: the one warm accent (mascot star, kickers, dots). Never a
+  // button fill and never more than ~10% of a screen.
+  gold: "#F9C74F",
+  goldDeep: "#B7791F", // gold legible as text on white (4.5:1+)
+  goldTint: "rgba(249,199,79,0.22)",
+  // Soft tints for status chips/banners — replaces scattered rgba literals.
+  successTint: "#E7F6EF",
+  dangerTint: "rgba(210,31,60,0.10)",
+  warningTint: "rgba(199,123,10,0.12)",
+  // Text and strokes drawn on ink (`primary`) surfaces.
+  onPrimaryHigh: "rgba(255,255,255,0.92)",
+  onPrimaryMid: "rgba(255,255,255,0.75)",
+  onPrimaryLow: "rgba(255,255,255,0.2)",
+  onPrimaryFaint: "rgba(255,255,255,0.12)",
 };
 
 // Scheme-independent scale — the rhythm every screen shares, so a future
@@ -83,6 +97,15 @@ const scale = {
       fontWeight: "400" as const,
       fontFamily: "SpaceGrotesk_400Regular",
       lineHeight: 18,
+    },
+    // Numerals that must not jitter as they change: CGPA, percentages,
+    // counts, countdowns. Same family/size as body; tabular figures.
+    mono: {
+      fontSize: 15,
+      fontWeight: "700" as const,
+      fontFamily: "SpaceGrotesk_700Bold",
+      lineHeight: 22,
+      fontVariant: ["tabular-nums" as const],
     },
   },
   shadow: {

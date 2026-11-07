@@ -1,17 +1,24 @@
-import { useEffect, useRef, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, { FadeIn, useReducedMotion } from "react-native-reanimated";
 import { theme } from "@/constants/theme";
+import { duration } from "@/constants/motion";
 import { themedStyles } from "@/components/themedStyles";
 import { AppHeader } from "@/components/shared/AppHeader";
 import { Button } from "@/components/shared/Button";
+import { ClockIcon, CloseIcon, TickIcon } from "@/components/shared/Icons";
+import { PressableScale } from "@/components/shared/PressableScale";
+import { ProgressBar } from "@/components/shared/ProgressBar";
+import { ErrorState, LoadingState } from "@/components/shared/States";
+import { Mascot, type MascotPose } from "@/components/mascot/Mascot";
 import { ChoiceRow, type ChoiceState } from "@/components/test/QuestionParts";
 import { TestEmpty } from "@/components/test/TestEmpty";
 import { TestSetup } from "@/components/test/TestSetup";
 import { useBankQuestions } from "@/components/test/useBankQuestions";
-import { ErrorState, LoadingState } from "@/components/shared/States";
+import { confirmAction } from "@/utils/confirm";
 import type { Question, TestSelection } from "@/types";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 // ─── CBT Mode ───────────────────────────────────────────────────────────────
 // The exam-hall simulation: a clock, one pass, no feedback until you submit.
@@ -25,6 +32,12 @@ function mmss(total: number): string {
   const m = Math.floor(Math.max(0, total) / 60);
   const s = Math.max(0, total) % 60;
   return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function poseFor(pct: number): MascotPose {
+  if (pct >= 70) return "celebrate";
+  if (pct >= 40) return "think";
+  return "error";
 }
 
 export default function CbtMode() {
@@ -62,20 +75,22 @@ function CbtLoader({
 }) {
   const { questions, error, retry } = useBankQuestions(selection);
 
-  if (!questions) {
-    return (
-      <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-        <AppHeader title="CBT Mode" showBack onBack={onReset} />
-        <LoadingState variant="question" message="Loading your paper…" />
-      </SafeAreaView>
-    );
-  }
-
+  // Error first: on failure `questions` is null too, so checking it first would
+  // show the loading skeleton forever.
   if (error) {
     return (
       <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
         <AppHeader title="CBT Mode" showBack onBack={onReset} />
         <ErrorState message={error} actionLabel="Retry" onAction={retry} />
+      </SafeAreaView>
+    );
+  }
+
+  if (!questions) {
+    return (
+      <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+        <AppHeader title="CBT Mode" showBack onBack={onReset} />
+        <LoadingState variant="question" message="Loading your paper…" />
       </SafeAreaView>
     );
   }
@@ -107,33 +122,28 @@ function CbtPaper({
   onExit: () => void;
   onReset: () => void;
 }) {
+  const reduce = useReducedMotion();
+  const total = questions.length * SECONDS_PER_QUESTION;
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [submitted, setSubmitted] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(
-    questions.length * SECONDS_PER_QUESTION,
-  );
-
-  // Kept in a ref so the tick can submit without reading stale state.
-  const submittedRef = useRef(false);
+  const [secondsLeft, setSecondsLeft] = useState(total);
+  // The deadline is a wall-clock time, so a backgrounded app or a late tick
+  // can never stretch the exam.
+  const [endsAt] = useState(() => Date.now() + total * 1000);
 
   useEffect(() => {
-    if (questions.length === 0) return;
+    if (submitted || questions.length === 0) return;
     const id = setInterval(() => {
-      setSecondsLeft((s) => {
-        if (s <= 1) {
-          clearInterval(id);
-          if (!submittedRef.current) {
-            submittedRef.current = true;
-            setSubmitted(true);
-          }
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
+      const left = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
+      setSecondsLeft(left);
+      if (left === 0) {
+        clearInterval(id);
+        setSubmitted(true);
+      }
+    }, 500);
     return () => clearInterval(id);
-  }, [questions.length]);
+  }, [submitted, endsAt, questions.length]);
 
   if (questions.length === 0) {
     return (
@@ -161,27 +171,43 @@ function CbtPaper({
           contentContainerStyle={styles.body}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.scoreCard}>
+          <Animated.View
+            entering={reduce ? undefined : FadeIn.duration(duration.enter)}
+            style={styles.scoreCard}
+            accessible
+            accessibilityLabel={`Score ${pct} percent, ${score} of ${questions.length} correct`}
+          >
+            <Mascot pose={poseFor(pct)} size={96} />
             <Text style={styles.scoreValue}>{pct}%</Text>
+            <View style={styles.scoreBar}>
+              <ProgressBar value={pct} tone="gold" label="Score" />
+            </View>
             <Text style={styles.scoreSub}>
               {score} of {questions.length} correct · {selection.courseCode} ·{" "}
               {selection.year}
             </Text>
             {timedOut && (
               <Text style={styles.scoreNote}>
-                Time ran out — the paper submitted itself.
+                Time ran out, so the paper submitted itself.
               </Text>
             )}
-          </View>
+          </Animated.View>
 
           {questions.map((q, i) => {
             const picked = answers[q.id];
             const right = picked === q.answerIndex;
             return (
               <View key={q.id} style={styles.reviewCard}>
-                <Text style={styles.reviewTopic}>
-                  {i + 1}. {q.topic}
-                </Text>
+                <View style={styles.reviewHead}>
+                  <Text style={styles.reviewTopic}>
+                    {i + 1}. {q.topic}
+                  </Text>
+                  {right ? (
+                    <TickIcon size={20} color={theme.colors.success} />
+                  ) : (
+                    <CloseIcon size={20} color={theme.colors.danger} />
+                  )}
+                </View>
                 <Text style={styles.reviewPrompt}>{q.prompt}</Text>
                 <Text style={styles.reviewLine}>
                   Your answer:{" "}
@@ -205,9 +231,9 @@ function CbtPaper({
             title="New set"
             variant="secondary"
             onPress={onReset}
-            style={{ flex: 1 }}
+            style={styles.flex}
           />
-          <Button title="Done" onPress={onExit} style={{ flex: 1 }} />
+          <Button title="Done" onPress={onExit} style={styles.flex} />
         </View>
       </>
     );
@@ -215,28 +241,104 @@ function CbtPaper({
 
   const question = questions[index];
   const picked = answers[question.id];
+  const critical = secondsLeft <= 10;
+  const low = secondsLeft <= Math.min(60, total * 0.25);
+  const timerColor = critical
+    ? theme.colors.danger
+    : low
+      ? theme.colors.warning
+      : theme.colors.text;
 
   // Leaving mid-paper discards answers — confirm so a stray tap can't nuke it.
-  const confirmExit = () =>
-    Alert.alert(
-      "Leave this paper?",
-      "Your answers for this attempt will be lost.",
-      [
-        { text: "Stay" },
-        { text: "Leave", style: "destructive", onPress: onReset },
-      ],
-    );
+  const confirmExit = async () => {
+    const ok = await confirmAction({
+      title: "Leave this paper?",
+      message: "Your answers for this attempt will be lost.",
+      confirmLabel: "Leave",
+      destructive: true,
+    });
+    if (ok) onReset();
+  };
+
+  const submit = async () => {
+    const left = questions.length - answeredCount;
+    if (left > 0) {
+      const ok = await confirmAction({
+        title: "Submit now?",
+        message: `${left} question${left === 1 ? " is" : "s are"} unanswered and will count as wrong.`,
+        confirmLabel: "Submit",
+      });
+      if (!ok) return;
+    }
+    setSubmitted(true);
+  };
 
   return (
     <>
-      <AppHeader title="CBT Mode" showBack onBack={confirmExit} />
+      <AppHeader
+        title="CBT Mode"
+        showBack
+        onBack={() => {
+          void confirmExit();
+        }}
+      />
 
       <View style={styles.timerBar}>
-        <Text style={styles.timerText}>{mmss(secondsLeft)}</Text>
+        <View
+          style={styles.timerRow}
+          accessible
+          accessibilityRole="timer"
+          accessibilityLabel={`${mmss(secondsLeft)} remaining`}
+        >
+          <ClockIcon size={22} color={timerColor} />
+          <Text style={[styles.timerText, { color: timerColor }]}>
+            {mmss(secondsLeft)}
+          </Text>
+        </View>
         <Text style={styles.timerSub}>
           {answeredCount} of {questions.length} answered
         </Text>
       </View>
+      <View style={styles.timerTrack}>
+        <ProgressBar
+          value={(secondsLeft / total) * 100}
+          tone="ink"
+          label="Time remaining"
+        />
+      </View>
+
+      {/* Jump to any question; ink = answered, ringed = the one you're on. */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.nav}
+        style={styles.navScroll}
+      >
+        {questions.map((q, i) => {
+          const answered = answers[q.id] !== undefined;
+          const current = i === index;
+          return (
+            <PressableScale
+              key={q.id}
+              onPress={() => setIndex(i)}
+              haptic="selection"
+              style={[
+                styles.navDot,
+                answered && styles.navDotAnswered,
+                current && styles.navDotCurrent,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={`Question ${i + 1}${answered ? ", answered" : ""}${current ? ", current" : ""}`}
+            >
+              <Text
+                style={[styles.navText, answered && styles.navTextAnswered]}
+              >
+                {i + 1}
+              </Text>
+            </PressableScale>
+          );
+        })}
+      </ScrollView>
 
       <ScrollView
         contentContainerStyle={styles.body}
@@ -249,10 +351,11 @@ function CbtPaper({
 
         {question.options.map((opt, i) => (
           <ChoiceRow
-            key={opt}
+            key={`${question.id}-${i}`}
             index={i}
             text={opt}
             state={(picked === i ? "selected" : "idle") as ChoiceState}
+            haptic="selection"
             onPress={() =>
               setAnswers((prev) => ({ ...prev, [question.id]: i }))
             }
@@ -266,23 +369,16 @@ function CbtPaper({
           variant="secondary"
           disabled={index === 0}
           onPress={() => setIndex((i) => Math.max(0, i - 1))}
-          style={{ flex: 1 }}
+          style={styles.flex}
         />
         {index < questions.length - 1 ? (
           <Button
             title="Next"
             onPress={() => setIndex((i) => i + 1)}
-            style={{ flex: 1 }}
+            style={styles.flex}
           />
         ) : (
-          <Button
-            title="Submit"
-            onPress={() => {
-              submittedRef.current = true;
-              setSubmitted(true);
-            }}
-            style={{ flex: 1 }}
-          />
+          <Button title="Submit" onPress={submit} style={styles.flex} />
         )}
       </View>
     </>
@@ -292,21 +388,49 @@ function CbtPaper({
 const styles = themedStyles(() =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: theme.colors.background },
+    flex: { flex: 1 },
     body: { padding: theme.spacing.md, paddingBottom: theme.spacing.lg },
 
     timerBar: {
       flexDirection: "row",
-      alignItems: "baseline",
+      alignItems: "center",
       justifyContent: "space-between",
       paddingHorizontal: theme.spacing.md,
+      paddingTop: theme.spacing.xs,
       paddingBottom: theme.spacing.xs,
     },
-    timerText: {
-      ...theme.type.title,
-      color: theme.colors.text,
-      fontVariant: ["tabular-nums"],
+    timerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.xs,
     },
+    timerText: { ...theme.type.mono, ...theme.type.title },
     timerSub: { ...theme.type.caption, color: theme.colors.secondary },
+    timerTrack: { paddingHorizontal: theme.spacing.md },
+
+    navScroll: { flexGrow: 0 },
+    nav: {
+      gap: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+    },
+    navDot: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    navDotAnswered: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+    },
+    navDotCurrent: { borderWidth: 2, borderColor: theme.colors.gold },
+    navText: { ...theme.type.mono, fontSize: 13, color: theme.colors.text },
+    navTextAnswered: { color: theme.colors.onPrimary },
 
     progress: {
       ...theme.type.caption,
@@ -320,28 +444,31 @@ const styles = themedStyles(() =>
     },
 
     scoreCard: {
-      backgroundColor: theme.colors.primary,
+      backgroundColor: theme.colors.softBlue,
       borderRadius: theme.radius.xl,
       padding: theme.spacing.lg,
       alignItems: "center",
+      gap: theme.spacing.xs,
       marginBottom: theme.spacing.md,
     },
     scoreValue: {
       ...theme.type.hero,
       fontSize: 52,
       lineHeight: 58,
-      color: theme.colors.onPrimary,
+      color: theme.colors.text,
       fontVariant: ["tabular-nums"],
     },
+    scoreBar: { alignSelf: "stretch" },
     scoreSub: {
       ...theme.type.caption,
-      color: theme.colors.primaryMuted,
-      marginTop: 4,
+      color: theme.colors.secondary,
+      textAlign: "center",
     },
     scoreNote: {
       ...theme.type.caption,
-      color: theme.colors.primaryMuted,
-      marginTop: 6,
+      color: theme.colors.warning,
+      fontFamily: theme.font.bold,
+      fontWeight: "700",
     },
 
     reviewCard: {
@@ -351,19 +478,22 @@ const styles = themedStyles(() =>
       borderRadius: theme.radius.lg,
       padding: theme.spacing.md,
       marginBottom: theme.spacing.xs,
+      gap: 4,
+    },
+    reviewHead: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: theme.spacing.xs,
     },
     reviewTopic: {
+      flex: 1,
       ...theme.type.caption,
       fontFamily: theme.font.bold,
       fontWeight: "700",
       color: theme.colors.accent,
-      marginBottom: 4,
     },
-    reviewPrompt: {
-      ...theme.type.body,
-      color: theme.colors.text,
-      marginBottom: 6,
-    },
+    reviewPrompt: { ...theme.type.body, color: theme.colors.text },
     reviewLine: { ...theme.type.caption, color: theme.colors.secondary },
     ok: {
       color: theme.colors.success,

@@ -1,8 +1,13 @@
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { theme } from "@/constants/theme";
 import { themedStyles } from "@/components/themedStyles";
 import { Button } from "@/components/shared/Button";
+import { SelectChip } from "@/components/shared/Chips";
+import { TickIcon } from "@/components/shared/Icons";
+import { PressableScale } from "@/components/shared/PressableScale";
+import { ProgressBar } from "@/components/shared/ProgressBar";
+import { Reveal } from "@/components/shared/Reveal";
 import {
   EmptyState,
   ErrorState,
@@ -48,6 +53,7 @@ export function TestSetup({
   const course = courses.find((c) => c.id === courseId) ?? null;
 
   const pickCourse = async (id: string, code: string) => {
+    if (bankStatus === "loading") return; // ignore taps while a bank is loading
     setCourseId(id);
     setPaperId(null);
     setTopics([]);
@@ -94,238 +100,234 @@ export function TestSetup({
 
   return (
     <View style={styles.root}>
-      {/* ── Progress: three quiet dots, never a step counter ── */}
+      {/* ── Progress: a bar plus the step name, in mono so it never jitters ── */}
       <View style={styles.progress}>
-        {STEPS.map((label, i) => {
-          const done = i < step;
-          const active = i === step;
-          return (
-            <View key={label} style={styles.progressItem}>
-              <View
-                style={[
-                  styles.pip,
-                  (done || active) && styles.pipOn,
-                  active && styles.pipActive,
-                ]}
-              />
-              <Text
-                style={[
-                  styles.progressLabel,
-                  (done || active) && styles.progressLabelOn,
-                ]}
-              >
-                {label}
-              </Text>
-              {i < STEPS.length - 1 && (
-                <View style={[styles.rail, done && styles.railOn]} />
-              )}
-            </View>
-          );
-        })}
+        <Text style={styles.progressLabel} accessibilityLiveRegion="polite">
+          Step {step + 1} of {STEPS.length} · {STEPS[step]}
+        </Text>
+        <ProgressBar
+          value={((step + 1) / STEPS.length) * 100}
+          tone="ink"
+          label="Setup progress"
+        />
       </View>
 
       <ScrollView
         contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        {step === 0 && (
-          <>
-            <Text style={styles.h1}>Which course?</Text>
-            <Text style={styles.sub}>
-              Pick the course you want to practise for {MODE_NOUN[mode]}.
-            </Text>
-            {courses.length === 0 && (
-              <EmptyState
-                title="No courses yet"
-                body="Courses for your level appear here once they are added."
-              />
-            )}
-            {courses.map((c) => (
-              <Pressable
-                key={c.id}
-                onPress={() => pickCourse(c.id, c.courseCode)}
-                style={[styles.option, courseId === c.id && styles.optionOn]}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.optionTitle}>{c.courseCode}</Text>
-                  <Text style={styles.optionSub}>{c.courseTitle}</Text>
+        {/* key={step}: each step re-enters, so moving on reads as moving on. */}
+        <Reveal key={step} index={0}>
+          {step === 0 && (
+            <>
+              <Text style={styles.h1}>Which course?</Text>
+              <Text style={styles.sub}>
+                Pick the course you want to practise for {MODE_NOUN[mode]}.
+              </Text>
+              {bankStatus === "loading" && (
+                <LoadingState variant="cards" message="Loading papers…" />
+              )}
+              {/* A failed fetch keeps you on this step, so the error lives here. */}
+              {bankStatus === "error" && (
+                <View style={styles.statusBox}>
+                  <ErrorState
+                    message="Could not load papers. Check your connection."
+                    actionLabel="Retry"
+                    onAction={() =>
+                      course && pickCourse(course.id, course.courseCode)
+                    }
+                  />
                 </View>
-              </Pressable>
-            ))}
-          </>
-        )}
+              )}
+              {courses.length === 0 && (
+                <View style={styles.statusBox}>
+                  <EmptyState
+                    pose="read"
+                    title="No courses yet"
+                    body="Courses for your level appear here once they are added."
+                  />
+                </View>
+              )}
+              {bankStatus !== "loading" &&
+                courses.map((c) => (
+                  <Option
+                    key={c.id}
+                    title={c.courseCode}
+                    sub={c.courseTitle}
+                    selected={courseId === c.id}
+                    onPress={() => pickCourse(c.id, c.courseCode)}
+                  />
+                ))}
+            </>
+          )}
 
-        {step === 1 && (
-          <>
-            <Text style={styles.h1}>Which paper?</Text>
-            <Text style={styles.sub}>
-              {course
-                ? `${course.courseCode}. Papers uploaded for this course.`
-                : "Pick a paper."}
-            </Text>
-            {bankStatus === "loading" && (
-              <LoadingState variant="cards" message="Loading papers…" />
-            )}
-            {bankStatus === "error" && (
-              <ErrorState
-                message="Could not load papers. Check your connection."
-                actionLabel="Retry"
-                onAction={() =>
-                  course && pickCourse(course.id, course.courseCode)
-                }
-              />
-            )}
-            {bankStatus === "idle" && papers.length === 0 && (
-              <EmptyState
-                title="No papers yet"
-                body="No question papers have been uploaded for this course. Check back soon."
-              />
-            )}
-            {bankStatus === "idle" &&
-              papers.map((p) => (
-                <Pressable
+          {step === 1 && (
+            <>
+              <Text style={styles.h1}>Which paper?</Text>
+              <Text style={styles.sub}>
+                {course
+                  ? `${course.courseCode}. Papers uploaded for this course.`
+                  : "Pick a paper."}
+              </Text>
+              {papers.length === 0 && (
+                <View style={styles.statusBox}>
+                  <EmptyState
+                    pose="sleep"
+                    title="No papers yet"
+                    body="No question papers have been uploaded for this course. Check back soon."
+                  />
+                </View>
+              )}
+              {papers.map((p) => (
+                <Option
                   key={p.id}
+                  title={p.year}
+                  sub={p.title}
+                  meta={
+                    p.count > 0
+                      ? `${p.count} question${p.count === 1 ? "" : "s"}`
+                      : "Empty"
+                  }
+                  selected={paperId === p.id}
                   onPress={() => {
                     setPaperId(p.id);
                     setStep(2);
                   }}
-                  style={[styles.option, paperId === p.id && styles.optionOn]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.optionTitle}>{p.year}</Text>
-                    <Text style={styles.optionSub}>{p.title}</Text>
-                  </View>
-                  <Text style={styles.optionMeta}>
-                    {p.count > 0
-                      ? `${p.count} question${p.count === 1 ? "" : "s"}`
-                      : "Empty"}
-                  </Text>
-                </Pressable>
+                />
               ))}
-          </>
-        )}
+            </>
+          )}
 
-        {step === 2 && (
-          <>
-            <Text style={styles.h1}>Which topics?</Text>
-            <Text style={styles.sub}>
-              {course && paper ? `${course.courseCode} · ${paper.year}` : ""} —
-              take the whole paper, or narrow it down.
-            </Text>
+          {step === 2 && (
+            <>
+              <Text style={styles.h1}>Which topics?</Text>
+              <Text style={styles.sub}>
+                {course && paper
+                  ? `${course.courseCode} · ${paper.year}. `
+                  : ""}
+                Take the whole paper, or narrow it down.
+              </Text>
 
-            <Pressable
-              onPress={() => setAllTopics(true)}
-              style={[styles.option, allTopics && styles.optionOn]}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={styles.optionTitle}>All topics</Text>
-                <Text style={styles.optionSub}>
-                  Every question in this paper.
-                </Text>
-              </View>
-            </Pressable>
+              <Option
+                title="All topics"
+                sub="Every question in this paper."
+                selected={allTopics}
+                onPress={() => setAllTopics(true)}
+              />
+              <Option
+                title="Choose topics"
+                sub="Pick one or more. Good for revision sprints."
+                selected={!allTopics}
+                onPress={() => setAllTopics(false)}
+              />
 
-            <Pressable
-              onPress={() => setAllTopics(false)}
-              style={[styles.option, !allTopics && styles.optionOn]}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={styles.optionTitle}>Choose topics</Text>
-                <Text style={styles.optionSub}>
-                  Pick one or more. Good for revision sprints.
-                </Text>
-              </View>
-            </Pressable>
-
-            {!allTopics && topics.length > 0 && (
-              <View style={styles.chips}>
-                {topics.map((t) => {
-                  const on = pickedTopics.includes(t);
-                  return (
-                    <Pressable
+              {!allTopics && topics.length > 0 && (
+                <View style={styles.chips}>
+                  {topics.map((t) => (
+                    <SelectChip
                       key={t}
+                      label={t}
+                      selected={pickedTopics.includes(t)}
                       onPress={() => toggleTopic(t)}
-                      style={[styles.chip, on && styles.chipOn]}
-                    >
-                      <Text style={[styles.chipText, on && styles.chipTextOn]}>
-                        {t}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            )}
+                    />
+                  ))}
+                </View>
+              )}
 
-            {!allTopics && topics.length === 0 && (
-              <Text style={styles.note}>
-                We have no topics mapped for this paper yet.
-              </Text>
-            )}
+              {!allTopics && topics.length === 0 && (
+                <Text style={styles.note}>
+                  We have no topics mapped for this paper yet.
+                </Text>
+              )}
 
-            {!allTopics && topics.length > 0 && pickedTopics.length === 0 && (
-              <Text style={styles.note}>
-                Select at least one topic to load questions.
-              </Text>
-            )}
-          </>
-        )}
+              {!allTopics && topics.length > 0 && pickedTopics.length === 0 && (
+                <Text style={styles.note}>
+                  Select at least one topic to load questions.
+                </Text>
+              )}
+            </>
+          )}
+        </Reveal>
       </ScrollView>
 
       {/* ── Footer: step back, or commit and load ── */}
-      <View style={styles.footer}>
-        {step > 0 && (
-          <Button
-            title="Back"
-            variant="secondary"
-            onPress={goBack}
-            style={{ flex: 1 }}
-          />
-        )}
-        {step === 2 && (
-          <Button
-            title="Load questions"
-            disabled={!canLoad}
-            onPress={load}
-            style={{ flex: 1 }}
-          />
-        )}
-      </View>
+      {(step > 0 || step === 2) && (
+        <View style={styles.footer}>
+          {step > 0 && (
+            <Button
+              title="Back"
+              variant="secondary"
+              onPress={goBack}
+              style={styles.flex}
+            />
+          )}
+          {step === 2 && (
+            <Button
+              title="Load questions"
+              disabled={!canLoad}
+              onPress={load}
+              style={styles.flex}
+            />
+          )}
+        </View>
+      )}
     </View>
+  );
+}
+
+/** A tappable choice row: ink-bordered with a tick when selected. */
+function Option({
+  title,
+  sub,
+  meta,
+  selected,
+  onPress,
+}: {
+  title: string;
+  sub: string;
+  meta?: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <PressableScale
+      onPress={onPress}
+      haptic="selection"
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      accessibilityLabel={`${title}. ${sub}${meta ? `. ${meta}` : ""}`}
+      style={[styles.option, selected && styles.optionOn]}
+    >
+      <View style={styles.optionBody}>
+        <Text style={styles.optionTitle}>{title}</Text>
+        <Text style={styles.optionSub}>{sub}</Text>
+      </View>
+      {!!meta && <Text style={styles.optionMeta}>{meta}</Text>}
+      {selected && (
+        <View style={styles.check}>
+          <TickIcon size={16} color={theme.colors.onPrimary} />
+        </View>
+      )}
+    </PressableScale>
   );
 }
 
 const styles = themedStyles(() =>
   StyleSheet.create({
     root: { flex: 1, backgroundColor: theme.colors.background },
+    flex: { flex: 1 },
     progress: {
-      flexDirection: "row",
-      alignItems: "center",
+      gap: theme.spacing.xs,
       paddingHorizontal: theme.spacing.md,
       paddingTop: theme.spacing.sm,
       paddingBottom: theme.spacing.xs,
     },
-    progressItem: { flexDirection: "row", alignItems: "center", gap: 6 },
-    pip: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: theme.colors.muted,
+    progressLabel: {
+      ...theme.type.caption,
+      color: theme.colors.secondary,
+      fontVariant: ["tabular-nums"],
     },
-    pipOn: { backgroundColor: theme.colors.primaryMuted },
-    pipActive: { backgroundColor: theme.colors.accent },
-    progressLabel: { ...theme.type.caption, color: theme.colors.secondary },
-    progressLabelOn: {
-      color: theme.colors.text,
-      fontFamily: theme.font.bold,
-      fontWeight: "700",
-    },
-    rail: {
-      width: 20,
-      height: 1,
-      backgroundColor: theme.colors.border,
-      marginHorizontal: 6,
-    },
-    railOn: { backgroundColor: theme.colors.primaryMuted },
 
     body: { padding: theme.spacing.md, paddingBottom: theme.spacing.lg },
     h1: { ...theme.type.title, color: theme.colors.text },
@@ -340,13 +342,14 @@ const styles = themedStyles(() =>
       color: theme.colors.secondary,
       marginTop: theme.spacing.sm,
     },
+    statusBox: { minHeight: 240 },
 
     option: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 12,
+      gap: theme.spacing.sm,
       minHeight: 64,
-      padding: theme.spacing.sm,
+      paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.md,
       marginBottom: theme.spacing.xs,
       borderRadius: theme.radius.lg,
@@ -358,43 +361,33 @@ const styles = themedStyles(() =>
       borderColor: theme.colors.accent,
       backgroundColor: theme.colors.softBlue,
     },
+    optionBody: { flex: 1, gap: 2 },
     optionTitle: {
       ...theme.type.body,
       fontFamily: theme.font.bold,
       fontWeight: "700",
       color: theme.colors.text,
     },
-    optionSub: {
+    optionSub: { ...theme.type.caption, color: theme.colors.secondary },
+    optionMeta: {
       ...theme.type.caption,
       color: theme.colors.secondary,
-      marginTop: 2,
+      fontVariant: ["tabular-nums"],
     },
-    optionMeta: { ...theme.type.caption, color: theme.colors.secondary },
+    check: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: theme.colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
 
     chips: {
       flexDirection: "row",
       flexWrap: "wrap",
       gap: theme.spacing.xs,
       marginTop: theme.spacing.xs,
-    },
-    chip: {
-      minHeight: 40,
-      justifyContent: "center",
-      paddingHorizontal: theme.spacing.sm,
-      borderRadius: theme.radius.full,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.colors.surface,
-    },
-    chipOn: {
-      backgroundColor: theme.colors.primary,
-      borderColor: theme.colors.primary,
-    },
-    chipText: { ...theme.type.caption, color: theme.colors.text },
-    chipTextOn: {
-      color: theme.colors.onPrimary,
-      fontFamily: theme.font.bold,
-      fontWeight: "700",
     },
 
     footer: {

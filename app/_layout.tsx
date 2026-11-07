@@ -5,6 +5,7 @@ import {
 } from "@expo-google-fonts/space-grotesk";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/authStore";
@@ -34,6 +35,7 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <StatusBar style="dark" />
       <AuthGate />
       <NotificationPanel />
     </QueryClientProvider>

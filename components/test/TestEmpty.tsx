@@ -1,13 +1,17 @@
 import { StyleSheet, Text, View } from "react-native";
+import Animated, { FadeIn, useReducedMotion } from "react-native-reanimated";
 import { theme } from "@/constants/theme";
+import { duration } from "@/constants/motion";
 import { themedStyles } from "@/components/themedStyles";
 import { Button } from "@/components/shared/Button";
+import { Mascot } from "@/components/mascot/Mascot";
 import type { TestSelection } from "@/types";
 
 // ─── "Nothing here yet" ─────────────────────────────────────────────────────
 // An empty bank is a normal outcome, not a failure: the student asked a fair
 // question and we simply have no questions for that course and level. So this
-// reads as information plus a way forward, never as an error.
+// reads as information plus a way forward, never as an error. Stax is
+// "thinking" (looking for it), not "error".
 
 export function TestEmpty({
   selection,
@@ -16,15 +20,17 @@ export function TestEmpty({
   selection: TestSelection;
   onChangeFilters: () => void;
 }) {
+  const reduce = useReducedMotion();
   const scope = selection.allTopics
     ? "the whole course"
     : `${selection.topics.length} topic${selection.topics.length === 1 ? "" : "s"}`;
 
   return (
-    <View style={styles.wrap}>
-      <View style={styles.mark}>
-        <Text style={styles.markText}>?</Text>
-      </View>
+    <Animated.View
+      entering={reduce ? undefined : FadeIn.duration(duration.enter)}
+      style={styles.wrap}
+    >
+      <Mascot pose="think" size={104} />
       <Text style={styles.title}>No questions for this yet</Text>
       <Text style={styles.body}>
         We don’t have any questions for{" "}
@@ -38,7 +44,7 @@ export function TestEmpty({
       <View style={styles.hintCard}>
         <Text style={styles.hintTitle}>What usually works</Text>
         <Text style={styles.hintLine}>
-          • Try another level for {selection.courseCode}
+          • Try another paper for {selection.courseCode}
         </Text>
         <Text style={styles.hintLine}>
           • Switch to “All topics” if you narrowed it down
@@ -53,7 +59,7 @@ export function TestEmpty({
         variant="secondary"
         onPress={onChangeFilters}
       />
-    </View>
+    </Animated.View>
   );
 }
 
@@ -66,29 +72,17 @@ const styles = themedStyles(() =>
       padding: theme.spacing.lg,
       gap: theme.spacing.xs,
     },
-    mark: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
-      backgroundColor: theme.colors.softBlue,
-      alignItems: "center",
-      justifyContent: "center",
-      marginBottom: theme.spacing.xs,
-    },
-    markText: {
-      ...theme.type.hero,
-      color: theme.colors.accent,
-      lineHeight: 34,
-    },
     title: {
       ...theme.type.title,
       color: theme.colors.text,
       textAlign: "center",
+      marginTop: theme.spacing.xs,
     },
     body: {
       ...theme.type.body,
       color: theme.colors.secondary,
       textAlign: "center",
+      maxWidth: 360,
     },
     strong: {
       fontFamily: theme.font.bold,
@@ -102,7 +96,7 @@ const styles = themedStyles(() =>
       borderColor: theme.colors.border,
       borderRadius: theme.radius.lg,
       padding: theme.spacing.md,
-      gap: 6,
+      gap: theme.spacing.xs,
       marginVertical: theme.spacing.sm,
     },
     hintTitle: {
@@ -112,7 +106,6 @@ const styles = themedStyles(() =>
       color: theme.colors.text,
       textTransform: "uppercase",
       letterSpacing: 1.2,
-      marginBottom: 2,
     },
     hintLine: { ...theme.type.caption, color: theme.colors.secondary },
   }),

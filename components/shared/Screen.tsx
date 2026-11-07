@@ -1,5 +1,4 @@
 import {
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -9,6 +8,7 @@ import {
 import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 import { theme } from "@/constants/theme";
 import { themedStyles } from "@/components/themedStyles";
+import { PressableScale } from "./PressableScale";
 
 export function Screen({
   children,
@@ -42,16 +42,13 @@ export function Card({
 }) {
   if (onPress) {
     return (
-      <Pressable
+      <PressableScale
         onPress={onPress}
-        style={({ pressed }) => [
-          styles.card,
-          style,
-          pressed && { opacity: 0.85 },
-        ]}
+        style={[styles.card, style]}
+        accessibilityRole="button"
       >
         {children}
-      </Pressable>
+      </PressableScale>
     );
   }
   return <View style={[styles.card, style]}>{children}</View>;

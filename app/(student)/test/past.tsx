@@ -1,20 +1,23 @@
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { theme } from "@/constants/theme";
 import { themedStyles } from "@/components/themedStyles";
 import { AppHeader } from "@/components/shared/AppHeader";
+import { TickIcon } from "@/components/shared/Icons";
+import { PressableScale } from "@/components/shared/PressableScale";
+import { ErrorState, LoadingState } from "@/components/shared/States";
 import { TestEmpty } from "@/components/test/TestEmpty";
 import { TestSetup } from "@/components/test/TestSetup";
 import { useBankQuestions } from "@/components/test/useBankQuestions";
-import { ErrorState, LoadingState } from "@/components/shared/States";
 import type { Question, TestSelection } from "@/types";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 // ─── Past Questions ─────────────────────────────────────────────────────────
 // The revision reader: every matching question listed in full, answer already
-// shown. No taps, no score — this is the format people actually cram from the
-// night before. Grouped by topic so a run of questions reads as one subject.
+// shown. No score — this is the format people actually cram from the night
+// before. Grouped by topic so a run of questions reads as one subject. A card
+// can be collapsed to quiz yourself first.
 
 export default function PastQuestions() {
   const router = useRouter();
@@ -55,20 +58,22 @@ function PastReader({
 }) {
   const { questions, error, retry } = useBankQuestions(selection);
 
-  if (!questions) {
-    return (
-      <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-        <AppHeader title="Past Questions" showBack onBack={onReset} />
-        <LoadingState variant="question" message="Loading questions…" />
-      </SafeAreaView>
-    );
-  }
-
+  // Error first: on failure `questions` is null too, so checking it first would
+  // show the loading skeleton forever.
   if (error) {
     return (
       <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
         <AppHeader title="Past Questions" showBack onBack={onReset} />
         <ErrorState message={error} actionLabel="Retry" onAction={retry} />
+      </SafeAreaView>
+    );
+  }
+
+  if (!questions) {
+    return (
+      <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+        <AppHeader title="Past Questions" showBack onBack={onReset} />
+        <LoadingState variant="question" message="Loading questions…" />
       </SafeAreaView>
     );
   }
@@ -104,7 +109,9 @@ function PastReader({
 
         {topics.map((topic) => (
           <View key={topic}>
-            <Text style={styles.topic}>{topic}</Text>
+            <Text style={styles.topic} accessibilityRole="header">
+              {topic}
+            </Text>
             {questions
               .filter((q) => q.topic === topic)
               .map((q, i) => (
@@ -133,7 +140,15 @@ function PastCard({
   const [open, setOpen] = useState(true);
 
   return (
-    <Pressable onPress={() => setOpen((v) => !v)} style={styles.card}>
+    <PressableScale
+      onPress={() => setOpen((v) => !v)}
+      haptic="selection"
+      scaleTo={0.99}
+      style={styles.card}
+      accessibilityRole="button"
+      accessibilityState={{ expanded: open }}
+      accessibilityLabel={`Question ${number}: ${question.prompt}. ${open ? "Hide" : "Show"} answer.`}
+    >
       <Text style={styles.qMeta}>Question {number}</Text>
       <Text style={styles.qPrompt}>{question.prompt}</Text>
 
@@ -142,10 +157,14 @@ function PastCard({
           {question.options.map((opt, i) => {
             const correct = i === question.answerIndex;
             return (
-              <View key={opt} style={styles.optRow}>
-                <Text style={[styles.optMark, correct && styles.optMarkOn]}>
-                  {correct ? "✓" : "○"}
-                </Text>
+              <View key={`${i}-${opt}`} style={styles.optRow}>
+                <View style={styles.optMark}>
+                  {correct ? (
+                    <TickIcon size={16} color={theme.colors.success} />
+                  ) : (
+                    <View style={styles.optDot} />
+                  )}
+                </View>
                 <Text style={[styles.optText, correct && styles.optTextOn]}>
                   {opt}
                 </Text>
@@ -159,7 +178,7 @@ function PastCard({
       )}
 
       <Text style={styles.toggle}>{open ? "Hide answer" : "Show answer"}</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -171,7 +190,8 @@ const styles = themedStyles(() =>
     summary: {
       ...theme.type.caption,
       color: theme.colors.secondary,
-      marginBottom: theme.spacing.sm,
+      marginBottom: theme.spacing.xs,
+      fontVariant: ["tabular-nums"],
     },
     topic: {
       ...theme.type.caption,
@@ -180,7 +200,7 @@ const styles = themedStyles(() =>
       letterSpacing: 1.2,
       textTransform: "uppercase",
       color: theme.colors.accent,
-      marginTop: theme.spacing.md,
+      marginTop: theme.spacing.lg,
       marginBottom: theme.spacing.xs,
     },
 
@@ -191,6 +211,7 @@ const styles = themedStyles(() =>
       borderRadius: theme.radius.lg,
       padding: theme.spacing.md,
       marginBottom: theme.spacing.xs,
+      ...theme.shadow.card,
     },
     qMeta: {
       ...theme.type.caption,
@@ -207,16 +228,22 @@ const styles = themedStyles(() =>
 
     optRow: {
       flexDirection: "row",
-      gap: 8,
+      gap: theme.spacing.xs,
       alignItems: "flex-start",
       marginBottom: 4,
     },
     optMark: {
-      ...theme.type.caption,
-      color: theme.colors.secondary,
-      width: 14,
+      width: 18,
+      height: 20,
+      alignItems: "center",
+      justifyContent: "center",
     },
-    optMarkOn: { color: theme.colors.success },
+    optDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: theme.colors.primaryMuted,
+    },
     optText: { flex: 1, ...theme.type.caption, color: theme.colors.secondary },
     optTextOn: {
       color: theme.colors.text,

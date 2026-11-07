@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "sia",
+    "name": "SIA",
     "slug": "sia",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,7 +8,10 @@
     "scheme": "sia",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "CADisableMinimumFrameDurationOnPhone": true
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -34,7 +37,10 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-font",
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

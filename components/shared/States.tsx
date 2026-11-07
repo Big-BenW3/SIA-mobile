@@ -1,6 +1,17 @@
+import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useReducedMotion,
+} from "react-native-reanimated";
 import { theme } from "@/constants/theme";
+import { duration, ease } from "@/constants/motion";
 import { Button } from "./Button";
+import { TickIcon } from "./Icons";
+import { haptic } from "./PressableScale";
+import { Mascot, type MascotPose } from "@/components/mascot/Mascot";
+import { MascotLoader } from "@/components/mascot/MascotLoader";
 import {
   BlockSkeleton,
   CalendarSkeleton,
@@ -15,10 +26,18 @@ import { themedStyles } from "@/components/themedStyles";
 // ─── Loading / empty / error shells ────────────────────────────────
 // Every async surface in the app renders one of these. `LoadingState` takes a
 // `variant` so the placeholder matches the shape of the content that is
-// coming — the layout holds still instead of jumping when data lands.
+// coming — the layout holds still instead of jumping when data lands. The
+// `mascot` variant is for waits long enough to deserve a face.
 
 export type LoadingVariant =
-  "block" | "post" | "rows" | "cards" | "detail" | "question" | "calendar";
+  | "block"
+  | "post"
+  | "rows"
+  | "cards"
+  | "detail"
+  | "question"
+  | "calendar"
+  | "mascot";
 
 export function LoadingState({
   message,
@@ -29,6 +48,13 @@ export function LoadingState({
   variant?: LoadingVariant;
   count?: number;
 }) {
+  if (variant === "mascot") {
+    return (
+      <View style={styles.center}>
+        <MascotLoader message={message} />
+      </View>
+    );
+  }
   return (
     <View style={styles.wrap}>
       <View style={styles.fill}>
@@ -58,15 +84,22 @@ export function EmptyState({
   body,
   actionLabel,
   onAction,
+  pose = "idle",
 }: {
   title: string;
   body: string;
   actionLabel?: string;
   onAction?: () => void;
+  /** Which Stax pose sits above the copy. */
+  pose?: MascotPose;
 }) {
+  const reduce = useReducedMotion();
   return (
-    <View style={styles.center}>
-      <View style={styles.dot} />
+    <Animated.View
+      entering={reduce ? undefined : FadeIn.duration(duration.enter)}
+      style={styles.center}
+    >
+      <Mascot pose={pose} size={104} />
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.hint}>{body}</Text>
       {!!actionLabel && (
@@ -74,10 +107,10 @@ export function EmptyState({
           title={actionLabel}
           variant="secondary"
           onPress={onAction}
-          style={{ marginTop: 16 }}
+          style={{ marginTop: theme.spacing.md }}
         />
       )}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -92,29 +125,46 @@ export function ErrorState({
   actionLabel?: string;
   onAction?: () => void;
 }) {
+  const reduce = useReducedMotion();
   return (
-    <View style={styles.center}>
-      <View style={styles.bang}>
-        <Text style={styles.bangText}>!</Text>
-      </View>
+    <Animated.View
+      entering={reduce ? undefined : FadeIn.duration(duration.enter)}
+      style={styles.center}
+    >
+      <Mascot pose="error" size={96} />
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.hint}>{message}</Text>
       {onAction ? (
         <Button
           title={actionLabel}
           onPress={onAction}
-          style={{ marginTop: 16 }}
+          style={{ marginTop: theme.spacing.md }}
         />
       ) : null}
-    </View>
+    </Animated.View>
   );
 }
 
 export function SuccessBanner({ message }: { message: string }) {
+  const reduce = useReducedMotion();
+  // One success haptic per appearance — it follows a user action.
+  useEffect(() => {
+    haptic("success");
+  }, []);
   return (
-    <View style={styles.success}>
-      <Text style={styles.successText}>✓ {message}</Text>
-    </View>
+    <Animated.View
+      entering={
+        reduce
+          ? FadeIn.duration(duration.small)
+          : FadeInDown.duration(duration.enter).easing(ease.out)
+      }
+      style={styles.success}
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
+    >
+      <TickIcon size={18} color={theme.colors.onPrimary} />
+      <Text style={styles.successText}>{message}</Text>
+    </Animated.View>
   );
 }
 
@@ -139,45 +189,27 @@ const styles = themedStyles(() =>
       alignItems: "center",
       justifyContent: "center",
       padding: theme.spacing.xl,
-      gap: 8,
-    },
-    dot: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
-      backgroundColor: theme.colors.softBlue,
-      marginBottom: 8,
-    },
-    bang: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: "rgba(210,31,60,0.10)",
-      alignItems: "center",
-      justifyContent: "center",
-      marginBottom: 8,
-    },
-    bangText: {
-      color: theme.colors.danger,
-      fontSize: 28,
-      fontFamily: theme.font.bold,
-      fontWeight: "700",
+      gap: theme.spacing.xs,
     },
     title: {
       ...theme.type.title,
       color: theme.colors.text,
       textAlign: "center",
+      marginTop: theme.spacing.xs,
     },
     hint: {
       ...theme.type.body,
       color: theme.colors.secondary,
       textAlign: "center",
+      maxWidth: 320,
     },
 
     success: {
-      backgroundColor: theme.colors.softBlue,
-      borderColor: theme.colors.border,
-      borderWidth: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: theme.spacing.xs,
+      backgroundColor: theme.colors.success,
       borderRadius: theme.radius.md,
       padding: theme.spacing.sm,
       marginBottom: theme.spacing.sm,
@@ -186,7 +218,7 @@ const styles = themedStyles(() =>
       ...theme.type.body,
       fontWeight: "700",
       fontFamily: theme.font.bold,
-      color: theme.colors.accent,
+      color: theme.colors.onPrimary,
       textAlign: "center",
     },
   }),

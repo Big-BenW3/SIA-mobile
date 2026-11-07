@@ -1,148 +1,147 @@
-import { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { theme } from "@/constants/theme";
 import { AppHeader } from "@/components/shared/AppHeader";
 import { Field } from "@/components/shared/Field";
 import { Button } from "@/components/shared/Button";
-import { ErrorState, SuccessBanner } from "@/components/shared/States";
+import { SelectChip } from "@/components/shared/Chips";
+import { DifficultyPicker } from "@/components/shared/DifficultyPicker";
+import { SuccessBanner } from "@/components/shared/States";
 import { usePlannerStore } from "@/stores/plannerStore";
+import { dayChoices } from "@/utils/dates";
 import type { Difficulty } from "@/types";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { themedStyles } from "@/components/themedStyles";
 
 // ─── AddTask (shared, both roles) ───────────────────────────────────
-// Empty input errors inline instead of no-op'ing. Both save paths write
-// to the store: AI-arrange suggests a difficulty first, plain save
-// defaults to Medium. Navigation is back()-only, so group-agnostic.
+// Saves a personal task to the planner store. Navigation is back()-only,
+// so group-agnostic. Date and difficulty are picked from fixed options, so
+// nothing free-typed can end up stored as a date or a difficulty.
 
 export function AddTask() {
   const router = useRouter();
-  const { addTask, updateTask, arrangeViaServer } = usePlannerStore();
+  const { addTask } = usePlannerStore();
+  const choices = useMemo(() => dayChoices(), []);
   const [text, setText] = useState("");
-  const [date, setDate] = useState("");
-  const [ai, setAi] = useState<Difficulty | null>(null);
+  const [dayKey, setDayKey] = useState("none");
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
-  // Arrange saves immediately; the id lets Save below refine, not duplicate.
-  const [savedId, setSavedId] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Local heuristic doubles as the offline fallback when the server
-  // arrange endpoint is unreachable.
-  const suggest = (t: string): Difficulty =>
-    t.length > 60 ? "hard" : t.length > 25 ? "medium" : "easy";
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
 
-  const arrange = async () => {
-    if (!text.trim()) {
-      setError("Describe the task first — AI needs something to arrange.");
-      return;
-    }
-    setError("");
-    setBusy(true);
-    try {
-      // Save first so the server sees the full pending list, then apply
-      // the returned arrangement and surface this task's suggestion.
-      const id = addTask({
-        title: text.trim(),
-        difficulty: "medium",
-        scheduledDate: date.trim() || null,
-      });
-      setSavedId(id);
-      await arrangeViaServer();
-      const latest = usePlannerStore.getState().tasks;
-      const mine = latest.find((t) => t.id === id);
-      setAi(mine?.difficulty ?? suggest(text));
-      setSaved(true);
-      setBusy(false);
-      setTimeout(() => router.back(), 900);
-    } catch {
-      setBusy(false);
-      setAi(suggest(text));
-      setError(
-        "Server arrange is unreachable — showing an on-device suggestion instead.",
-      );
-    }
-  };
-
-  const save = (difficulty: Difficulty) => {
+  const save = () => {
+    if (saved) return;
     if (!text.trim()) {
       setError("Describe the task first.");
       return;
     }
     setError("");
-    if (savedId) {
-      // Arrange already saved it — just refine the difficulty.
-      updateTask(savedId, { difficulty });
-    } else {
-      addTask({
-        title: text.trim(),
-        difficulty,
-        scheduledDate: date.trim() || null,
-      });
-    }
+    addTask({
+      title: text.trim(),
+      difficulty,
+      scheduledDate: choices.find((c) => c.key === dayKey)?.value ?? null,
+    });
     setSaved(true);
-    setTimeout(() => router.back(), 800);
+    timer.current = setTimeout(() => router.back(), 800);
   };
 
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: theme.colors.surface }}
-      edges={["top", "bottom"]}
-    >
+    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <AppHeader title="Add task" showBack />
-      <ScrollView contentContainerStyle={styles.body}>
-        <Field
-          label="What do you need to do?"
-          value={text}
-          onChangeText={(t) => {
-            setText(t);
-            setAi(null);
-            if (error) setError("");
-          }}
-          placeholder="e.g. Summarise chapter 4 and attempt 5 past questions…"
-          multiline
-        />
-        <Field
-          label="Scheduled date (optional)"
-          value={date}
-          onChangeText={setDate}
-          placeholder="e.g. Friday"
-        />
-        {ai && (
-          <SuccessBanner
-            message={`AI suggests ${ai} — saved with that difficulty, editable anytime.`}
-          />
-        )}
-        {saved && <SuccessBanner message="Task added to your planner." />}
-        {!!error && <ErrorState title="Check this entry" message={error} />}
-        <Button
-          title={busy ? "Arranging…" : "Arrange with AI"}
-          onPress={arrange}
-        />
-        <View style={{ height: 8 }} />
-        <Button
-          title={ai ? `Save with AI (${ai})` : "Save without AI (Medium)"}
-          variant="secondary"
-          onPress={() => save(ai ?? "medium")}
-        />
-        <Text style={styles.note}>
-          AI never touches CR posts or grades — it only orders your private
-          list.
-        </Text>
-      </ScrollView>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.body}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.column}>
+            <Field
+              label="What do you need to do?"
+              value={text}
+              onChangeText={(t) => {
+                setText(t);
+                if (error) setError("");
+              }}
+              placeholder="e.g. Summarise chapter 4"
+              hint="Be specific. A short action is easier to start and to arrange."
+              multiline
+              error={error || undefined}
+              editable={!saved}
+            />
+
+            <View style={styles.group} accessibilityRole="radiogroup">
+              <Text style={styles.label}>When</Text>
+              <View style={styles.chips}>
+                {choices.map((c) => (
+                  <SelectChip
+                    key={c.key}
+                    label={c.label}
+                    selected={dayKey === c.key}
+                    onPress={() => setDayKey(c.key)}
+                  />
+                ))}
+              </View>
+            </View>
+
+            <DifficultyPicker
+              value={difficulty}
+              onChange={(v) => v && setDifficulty(v)}
+            />
+
+            {saved && <SuccessBanner message="Task added to your planner." />}
+            <Button
+              title={saved ? "Added" : "Save task"}
+              onPress={save}
+              disabled={saved}
+            />
+            <Text style={styles.note}>
+              Tasks are private to you. CRs never see them.
+            </Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = themedStyles(() =>
   StyleSheet.create({
-    body: { padding: theme.spacing.md },
+    safe: { flex: 1, backgroundColor: theme.colors.surface },
+    flex: { flex: 1 },
+    body: { padding: theme.spacing.md, flexGrow: 1, alignItems: "center" },
+    column: { width: "100%", maxWidth: 480, gap: theme.spacing.xs },
+    group: { marginBottom: theme.spacing.sm },
+    label: {
+      ...theme.type.caption,
+      fontFamily: theme.font.bold,
+      fontWeight: "700",
+      color: theme.colors.text,
+      marginBottom: theme.spacing.xs,
+    },
+    chips: { flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.xs },
     note: {
       ...theme.type.caption,
       color: theme.colors.secondary,
       textAlign: "center",
-      marginTop: 16,
+      marginTop: theme.spacing.sm,
     },
   }),
 );

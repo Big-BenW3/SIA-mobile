@@ -1,64 +1,29 @@
 import { Tabs } from "expo-router";
-import { Platform, StyleSheet, View, type ColorValue } from "react-native";
-import { theme } from "@/constants/theme";
 import {
   FolderIcon,
-  GaugeIcon,
   HomeIcon,
   PlanIcon,
+  TestIcon,
   UserIcon,
 } from "@/components/shared/Icons";
+import {
+  dockListeners,
+  useDockOptions,
+  type DockIcons,
+} from "@/components/shared/Dock";
 
-// Dock shell shared visually with the CR side: fully transparent, no divider or
-// drop shadow, sidebar-friendly geometry, and a soft pill for focus.
-const ICONS: Record<string, (p: { color: ColorValue }) => React.ReactNode> = {
+// Student dock: Home · Plan · Files · Test · You. Shared geometry lives in Dock.
+const ICONS: DockIcons = {
   index: (p) => <HomeIcon {...p} />,
   itinerary: (p) => <PlanIcon {...p} />,
   resources: (p) => <FolderIcon {...p} />,
-  test: (p) => <GaugeIcon {...p} />,
+  test: (p) => <TestIcon {...p} />,
   profile: (p) => <UserIcon {...p} />,
 };
 
 export default function StudentTabs() {
   return (
-    <Tabs
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarActiveTintColor: theme.colors.text,
-        tabBarInactiveTintColor: theme.colors.secondary,
-        tabBarStyle: {
-          position: "absolute",
-          backgroundColor: "white",
-          borderWidth: 0.5,
-          borderColor: theme.colors.accent,
-          borderRadius: 50,
-          borderTopWidth: 0,
-          elevation: 0,
-          shadowOpacity: 0,
-          shadowRadius: 0,
-          height: 70,
-          marginHorizontal: "10%",
-          width: "80%",
-          paddingTop: 8,
-          marginBottom: Platform.OS === "ios" ? 20 : 48,
-          paddingHorizontal: 10,
-          paddingBottom: Platform.OS === "ios" ? 20 : 10,
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "800",
-          fontFamily: theme.font.bold,
-        },
-        tabBarIcon: ({ color, focused }) => {
-          const Glyph = ICONS[route.name];
-          return (
-            <View style={[styles.pill, focused && styles.pillActive]}>
-              {Glyph ? <Glyph color={color} /> : null}
-            </View>
-          );
-        },
-      })}
-    >
+    <Tabs screenOptions={useDockOptions(ICONS)} screenListeners={dockListeners}>
       <Tabs.Screen name="index" options={{ title: "Home" }} />
       <Tabs.Screen name="itinerary" options={{ title: "Plan" }} />
       <Tabs.Screen name="resources" options={{ title: "Files" }} />
@@ -67,14 +32,3 @@ export default function StudentTabs() {
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  pill: {
-    minWidth: 52,
-    height: 42,
-    borderRadius: 21,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pillActive: { backgroundColor: theme.colors.softBlue },
-});

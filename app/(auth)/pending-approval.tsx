@@ -1,23 +1,58 @@
+import { StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { theme } from "@/constants/theme";
 import { useAuthStore } from "@/stores/authStore";
-import { Screen, H1, Sub } from "@/components/shared/Screen";
 import { Button } from "@/components/shared/Button";
-import { SuccessBanner } from "@/components/shared/States";
+import { Mascot } from "@/components/mascot/Mascot";
+import { themedStyles } from "@/components/themedStyles";
 
-// Dormant while CR auto-approve is ON (no admin dashboard yet): the gate
-// never routes here because signup returns a session, not a pending
-// state. Kept for the manual-approval era — then this screen also gains
-// a real status-refresh action.
+// Shown when the server holds a CR request for admin approval (login returns
+// the requested level instead of tokens). The gate routes here; logging out
+// clears the pending state and returns to the welcome screen.
 export default function PendingApproval() {
   const { pendingLevel, logout } = useAuthStore();
   return (
-    <Screen>
-      <SuccessBanner message="Request received" />
-      <H1>Under review</H1>
-      <Sub>
-        Your CR request{pendingLevel ? ` for ${pendingLevel}` : ""} is with an
-        admin. You’ll get full access once approved.
-      </Sub>
-      <Button title="Back to welcome" variant="ghost" onPress={logout} />
-    </Screen>
+    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+      <View style={styles.body}>
+        <Mascot pose="sleep" size={148} />
+        <Text style={styles.title}>Under review</Text>
+        <Text style={styles.sub}>
+          Your Course Rep request{pendingLevel ? ` for ${pendingLevel}` : ""} is
+          with an admin. You&apos;ll get full access once it&apos;s approved.
+          Log in again any time to check.
+        </Text>
+      </View>
+      <View style={styles.footer}>
+        <Button title="Back to welcome" variant="secondary" onPress={logout} />
+      </View>
+    </SafeAreaView>
   );
 }
+
+const styles = themedStyles(() =>
+  StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+      paddingHorizontal: theme.spacing.lg,
+    },
+    body: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      gap: theme.spacing.sm,
+    },
+    title: {
+      ...theme.type.hero,
+      color: theme.colors.text,
+      textAlign: "center",
+    },
+    sub: {
+      ...theme.type.body,
+      color: theme.colors.secondary,
+      textAlign: "center",
+      maxWidth: 360,
+    },
+    footer: { paddingBottom: theme.spacing.md },
+  }),
+);

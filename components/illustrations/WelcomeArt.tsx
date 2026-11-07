@@ -6,7 +6,12 @@ import { theme } from "@/constants/theme";
 // greys become the muted/border tokens, skin tones are untouched.
 export function WelcomeArt() {
   return (
-    <Svg width="100%" viewBox="0 0 799.546 594.444">
+    <Svg
+      width="100%"
+      height="100%"
+      viewBox="0 0 799.546 594.444"
+      preserveAspectRatio="xMidYMid meet"
+    >
       <G transform="translate(-493.351 -317.665)">
         <G transform="translate(493.351 912.109) rotate(-90)">
           <Path

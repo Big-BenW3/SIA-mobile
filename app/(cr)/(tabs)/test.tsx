@@ -1,6 +1,7 @@
 import { StyleSheet } from "react-native";
 import { theme } from "@/constants/theme";
 import { themedStyles } from "@/components/themedStyles";
+import { AppHeader } from "@/components/shared/AppHeader";
 import { TestHub } from "@/components/test/TestHub";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -8,6 +9,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function CRTestHubScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
+      <AppHeader title="Test" />
       <TestHub base="(cr)" />
     </SafeAreaView>
   );

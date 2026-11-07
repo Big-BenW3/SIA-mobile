@@ -1,44 +1,47 @@
-import { useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
-  Dimensions,
-  FlatList,
-  Image,
-  Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { theme } from "@/constants/theme";
 import { AppHeader } from "@/components/shared/AppHeader";
 import {
   CalendarIcon,
+  ChevronIcon,
   FolderIcon,
   GaugeIcon,
   PlusIcon,
 } from "@/components/shared/Icons";
 import { EmptyState } from "@/components/shared/States";
 import {
-  PostListSkeleton,
   RowListSkeleton,
+  PostListSkeleton,
 } from "@/components/shared/Skeleton";
 import { Button } from "@/components/shared/Button";
+import { PressableScale } from "@/components/shared/PressableScale";
+import { Reveal } from "@/components/shared/Reveal";
+import { SectionHeader } from "@/components/shared/SectionHeader";
+import { ProgressBar } from "@/components/shared/ProgressBar";
+import { NotificationPrimer } from "@/components/shared/NotificationPrimer";
+import { PostCard } from "@/components/post/PostCard";
 import { useAuthStore } from "@/stores/authStore";
-import { HEROES } from "@/data/content";
 import { usePostsStore } from "@/stores/postsStore";
 import { usePlannerStore } from "@/stores/plannerStore";
 import { useSessionStore } from "@/stores/sessionStore";
-import { formatDateTime, formatDue } from "@/utils/due";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useNotificationStore } from "@/stores/appStores";
+import { dueTone, formatDue } from "@/utils/due";
+import { formatDay } from "@/utils/dates";
 import { themedStyles } from "@/components/themedStyles";
 
 // ─── Home dashboard ─────────────────────────────────────────────────
-// Order is deliberate: inspiration (carousel) → shortcuts (actions) →
-// orientation (academic week) → obligation (today's schedule) → catch-up.
-// Remote photography + local stub data; swap both for CDN/query data later.
-const { width } = Dimensions.get("window");
-const CARD_W = width - theme.spacing.md * 2;
+// Order is deliberate: the one thing due next → shortcuts → where the
+// semester is → everything coming up → catch-up. The most useful fact on the
+// screen is the first card, not a photo.
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -47,42 +50,65 @@ function greeting(): string {
   return "Good evening";
 }
 
+const ACTIONS = [
+  { label: "Calendar", Icon: CalendarIcon, to: "/(student)/calendar" },
+  { label: "New task", Icon: PlusIcon, to: "/(student)/itinerary/add" },
+  { label: "Files", Icon: FolderIcon, to: "/(student)/resources" },
+  { label: "CGPA", Icon: GaugeIcon, to: "/(student)/cgpa/overview" },
+];
+
 export default function HomeDashboard() {
   const router = useRouter();
   const { user } = useAuthStore();
   const firstName = (user?.fullName ?? "there").split(" ")[0];
 
-  // Carousel page index drives the dots below it.
-  const [slide, setSlide] = useState(0);
-  const pager = useRef<FlatList>(null);
-
-  // Academic calendar progress (real session state; unset until seeded).
   const {
     week,
     semester,
     sessionYear,
     status: sessionStatus,
     error: sessionError,
+    levelId,
     load: loadSession,
   } = useSessionStore();
   const weekPct = week
     ? Math.round((week.weekNumber / week.totalWeeks) * 100)
     : 0;
 
-  // Latest CR posts for the catch-up tail (live from the store).
-  const { posts, status: postsStatus } = usePostsStore();
-  const latest = posts.slice(0, 2);
+  const { posts, status: postsStatus, load: loadPosts } = usePostsStore();
+  const { tasks } = usePlannerStore();
+  const loadNotifications = useNotificationStore((s) => s.load);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadSession();
+      await Promise.all([
+        loadPosts(useSessionStore.getState().levelId ?? levelId ?? undefined),
+        loadNotifications(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadSession, loadPosts, loadNotifications, levelId]);
+
+  // The soonest deadline that has not passed.
+  const next = useMemo(
+    () =>
+      posts
+        .filter((p) => p.dueDate && dueTone(p.dueDate) !== "past")
+        .filter((p) => !Number.isNaN(new Date(p.dueDate as string).getTime()))
+        .sort(
+          (a, b) =>
+            new Date(a.dueDate as string).getTime() -
+            new Date(b.dueDate as string).getTime(),
+        )[0],
+    [posts],
+  );
 
   // Schedule: nearest dated posts + open personal tasks, merged.
-  const { tasks } = usePlannerStore();
-  const schedule: {
-    id: string;
-    time: string;
-    title: string;
-    meta: string;
-    kind: "post" | "task";
-    postId?: string;
-  }[] = [
+  const schedule = [
     ...posts
       .filter(
         (p) =>
@@ -104,20 +130,15 @@ export default function HomeDashboard() {
       .slice(0, 3)
       .map((t) => ({
         id: `task-${t.id}`,
-        time: t.scheduledDate ?? "Anytime",
+        time: t.scheduledDate ? formatDay(t.scheduledDate) : "Anytime",
         title: t.title,
         meta: `My task · ${t.difficulty}`,
         kind: "task" as const,
+        postId: undefined,
       })),
   ];
 
-  // Four quick actions: one tap to each core tab screen.
-  const actions = [
-    { label: "Calendar", Icon: CalendarIcon, to: "/(student)/calendar" },
-    { label: "New task", Icon: PlusIcon, to: "/(student)/itinerary/add" },
-    { label: "Files", Icon: FolderIcon, to: "/(student)/resources" },
-    { label: "CGPA", Icon: GaugeIcon, to: "/(student)/cgpa/overview" },
-  ];
+  const latest = posts.slice(0, 3);
 
   return (
     <SafeAreaView style={styles.root} edges={["top"]}>
@@ -126,12 +147,24 @@ export default function HomeDashboard() {
       <ScrollView
         contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refresh}
+            tintColor={theme.colors.primary}
+            colors={[theme.colors.primary]}
+          />
+        }
       >
-        {/* 1 ── Greeting: calm, human, one glance. */}
-        <Text style={styles.hello}>
-          {greeting()}, {firstName}
-        </Text>
-        <Text style={styles.date}>Here is your level at a glance.</Text>
+        {/* 1 ── Greeting */}
+        <Reveal index={0}>
+          <Text style={styles.hello}>
+            {greeting()}, {firstName}
+          </Text>
+          <Text style={styles.sub}>Here is your level at a glance.</Text>
+        </Reveal>
+
+        <NotificationPrimer />
 
         {/* A failed session load is explained, not silently rendered as zeros. */}
         {sessionStatus === "error" && (
@@ -148,167 +181,165 @@ export default function HomeDashboard() {
           </View>
         )}
 
-        {/* 2 ── Photo carousel: study-life imagery + dots (no autoplay — calm). */}
-        <FlatList
-          ref={pager}
-          data={HEROES}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(s) => s.id}
-          onMomentumScrollEnd={(e) =>
-            setSlide(Math.round(e.nativeEvent.contentOffset.x / CARD_W))
-          }
-          renderItem={({ item }) => (
-            <View style={styles.slide}>
-              {/* Midnight wash behind the photo so slow networks degrade gracefully. */}
-              <View style={styles.slideFallback} />
-              <Image
-                source={{ uri: item.image }}
-                style={styles.slideImage}
-                resizeMode="cover"
-              />
-              <View style={styles.slideShade} />
-              <View style={styles.slideCopy}>
-                <Text style={styles.slideKicker}>{item.kicker}</Text>
-                <Text style={styles.slideTitle}>{item.title}</Text>
+        {/* 2 ── Up next: the single most useful card. */}
+        <Reveal index={1}>
+          {next ? (
+            <PressableScale
+              onPress={() => router.push(`/(student)/post/${next.id}` as never)}
+              style={styles.upNext}
+              accessibilityRole="button"
+              accessibilityLabel={`Up next: ${next.title}, ${formatDue(next.dueDate)}`}
+            >
+              <Text style={styles.kicker}>UP NEXT</Text>
+              <Text style={styles.upNextTitle} numberOfLines={2}>
+                {next.title}
+              </Text>
+              <View style={styles.upNextFoot}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.upNextMeta}>
+                    {next.courseCode} · {next.postType}
+                  </Text>
+                  <Text style={styles.countdown}>
+                    {formatDue(next.dueDate)}
+                  </Text>
+                </View>
+                <ChevronIcon color={theme.colors.onPrimary} size={22} />
               </View>
+            </PressableScale>
+          ) : (
+            <View style={styles.clear}>
+              <Text style={styles.clearTitle}>Nothing due soon</Text>
+              <Text style={styles.clearBody}>
+                New deadlines from your CR will show up here.
+              </Text>
             </View>
           )}
-        />
-        <View style={styles.dots}>
-          {HEROES.map((s, i) => (
-            <Pressable
-              key={s.id}
-              hitSlop={8}
-              onPress={() => {
-                setSlide(i);
-                pager.current?.scrollToIndex({ index: i, animated: true });
-              }}
-            >
-              <View style={[styles.dot, i === slide && styles.dotActive]} />
-            </Pressable>
-          ))}
-        </View>
+        </Reveal>
 
-        {/* 3 ── Quick actions: the four core destinations, thumb-reachable. */}
-        <Text style={styles.section}>Quick actions</Text>
-        <View style={styles.grid}>
-          {actions.map(({ label, Icon, to }) => (
-            <Pressable
+        {/* 3 ── Quick actions */}
+        <Reveal index={2} style={styles.grid}>
+          {ACTIONS.map(({ label, Icon, to }) => (
+            <PressableScale
               key={label}
               onPress={() => router.push(to as never)}
-              style={({ pressed }) => [
-                styles.action,
-                pressed && { opacity: 0.85 },
-              ]}
+              style={styles.action}
+              accessibilityRole="button"
+              accessibilityLabel={label}
             >
               <View style={styles.actionIcon}>
                 <Icon />
               </View>
               <Text style={styles.actionLabel}>{label}</Text>
-            </Pressable>
+            </PressableScale>
           ))}
-        </View>
+        </Reveal>
 
-        {/* 4 ── Academic calendar: exactly where the school is right now. */}
-        <Text style={styles.section}>Academic calendar</Text>
-        {week ? (
-          <Pressable
-            onPress={() => router.push("/(student)/calendar" as never)}
-            style={styles.calCard}
-          >
-            <View style={styles.calRow}>
-              <View>
-                <Text style={styles.calWeek}>
-                  Week {week.weekNumber} of {week.totalWeeks}
-                </Text>
-                <Text style={styles.calMeta}>
-                  {semester ? `${semester} Semester` : ""}
-                  {sessionYear ? ` · ${sessionYear}` : ""}
-                </Text>
+        {/* 4 ── Academic week */}
+        <Reveal index={3}>
+          <SectionHeader title="Academic calendar" />
+          {week ? (
+            <PressableScale
+              onPress={() => router.push("/(student)/calendar" as never)}
+              style={styles.weekCard}
+              accessibilityRole="button"
+              accessibilityLabel={`Week ${week.weekNumber} of ${week.totalWeeks}. Open calendar.`}
+            >
+              <View style={styles.weekRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.weekTitle}>
+                    Week {week.weekNumber} of {week.totalWeeks}
+                  </Text>
+                  <Text style={styles.weekMeta}>
+                    {semester ? `${semester} Semester` : ""}
+                    {sessionYear ? ` · ${sessionYear}` : ""}
+                  </Text>
+                </View>
+                <View style={styles.pct}>
+                  <Text style={styles.pctText}>{weekPct}%</Text>
+                </View>
               </View>
-              <View style={styles.calPct}>
-                <Text style={styles.calPctText}>{weekPct}%</Text>
-              </View>
-            </View>
-            <View style={styles.bar}>
-              <View style={[styles.barFill, { width: `${weekPct}%` }]} />
-            </View>
-            {!!week.note && <Text style={styles.calNote}>{week.note}</Text>}
-          </Pressable>
-        ) : (
-          <Text style={styles.date}>
-            School calendar is being set up. Check back soon.
-          </Text>
-        )}
+              <ProgressBar value={weekPct} label="Semester progress" />
+              {!!week.note && <Text style={styles.weekNote}>{week.note}</Text>}
+            </PressableScale>
+          ) : (
+            <Text style={styles.sub}>
+              School calendar is being set up. Check back soon.
+            </Text>
+          )}
+        </Reveal>
 
-        {/* 5 ── Schedule: today merged — CR posts + personal tasks, time-ordered. */}
-        <View style={styles.schedHead}>
-          <Text style={styles.section}>Schedule</Text>
-          <Pressable
-            onPress={() => router.push("/(student)/calendar" as never)}
-            hitSlop={8}
-          >
-            <Text style={styles.link}>Full calendar</Text>
-          </Pressable>
-        </View>
-        {sessionStatus === "loading" ? (
-          <RowListSkeleton count={3} leading={40} />
-        ) : (
-          schedule.length === 0 && (
+        {/* 5 ── Schedule */}
+        <Reveal index={4}>
+          <SectionHeader
+            title="Schedule"
+            actionLabel="Full calendar"
+            onAction={() => router.push("/(student)/calendar" as never)}
+          />
+          {sessionStatus === "loading" ? (
+            <RowListSkeleton count={3} leading={40} />
+          ) : schedule.length === 0 ? (
             <EmptyState
+              pose="sleep"
               title="A clear day"
               body="Nothing scheduled. Enjoy it, or get ahead on tomorrow."
             />
-          )
-        )}
-        {schedule.map((item) => (
-          <Pressable
-            key={item.id}
-            onPress={() =>
-              item.kind === "post" && item.postId
-                ? router.push(`/(student)/post/${item.postId}` as never)
-                : router.push("/(student)/itinerary" as never)
-            }
-            style={styles.slot}
-          >
-            <Text style={styles.slotTime}>{item.time}</Text>
-            <View style={styles.slotLine}>
-              <View
-                style={[
-                  styles.slotDot,
-                  item.kind === "task" && styles.slotDotTask,
-                ]}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.slotTitle}>{item.title}</Text>
-              <Text style={styles.slotMeta}>{item.meta}</Text>
-            </View>
-          </Pressable>
-        ))}
+          ) : (
+            schedule.map((item, i) => (
+              <PressableScale
+                key={item.id}
+                onPress={() =>
+                  item.kind === "post" && item.postId
+                    ? router.push(`/(student)/post/${item.postId}` as never)
+                    : router.push("/(student)/itinerary" as never)
+                }
+                style={[styles.slot, i > 0 && styles.slotDivider]}
+                accessibilityRole="button"
+              >
+                <Text style={styles.slotTime}>{item.time}</Text>
+                <View style={styles.slotLine}>
+                  <View
+                    style={[
+                      styles.slotDot,
+                      item.kind === "task" && styles.slotDotTask,
+                    ]}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.slotTitle} numberOfLines={2}>
+                    {item.title}
+                  </Text>
+                  <Text style={styles.slotMeta}>{item.meta}</Text>
+                </View>
+              </PressableScale>
+            ))
+          )}
+        </Reveal>
 
-        {/* 6 ── Catch-up tail: the two freshest CR posts. */}
-        <Text style={styles.section}>Latest updates</Text>
-        {postsStatus === "loading" && latest.length === 0 ? (
-          <PostListSkeleton count={2} />
-        ) : (
-          latest.map((p) => (
-            <Pressable
-              key={p.id}
-              onPress={() => router.push(`/(student)/post/${p.id}` as never)}
-              style={styles.post}
-            >
-              <Text style={styles.postCode}>{p.courseCode}</Text>
-              <Text style={styles.postTitle}>{p.title}</Text>
-              <Text style={styles.postMeta}>
-                {p.author} · {formatDateTime(p.createdAt)}
-              </Text>
-            </Pressable>
-          ))
-        )}
-        <View style={{ height: 16 }} />
+        {/* 6 ── Catch-up */}
+        <Reveal index={5}>
+          <SectionHeader
+            title="Latest updates"
+            actionLabel="See all"
+            onAction={() => router.push("/(student)/updates" as never)}
+          />
+          {postsStatus === "loading" && latest.length === 0 ? (
+            <PostListSkeleton count={2} />
+          ) : latest.length === 0 ? (
+            <EmptyState
+              pose="read"
+              title="No updates yet"
+              body="Posts from your CRs will appear here."
+            />
+          ) : (
+            latest.map((p) => (
+              <PostCard
+                key={p.id}
+                post={p}
+                onPress={() => router.push(`/(student)/post/${p.id}` as never)}
+              />
+            ))
+          )}
+        </Reveal>
       </ScrollView>
     </SafeAreaView>
   );
@@ -322,94 +353,80 @@ const styles = themedStyles(() =>
       paddingBottom: theme.layout.tabClearance,
     },
 
-    // 1 ── greeting
     hello: { ...theme.type.hero, color: theme.colors.text },
-    date: {
+    sub: {
       ...theme.type.body,
       color: theme.colors.secondary,
-      marginBottom: 16,
+      marginBottom: theme.spacing.md,
     },
 
-    // Inline warning banner for a failed session load
     warn: {
-      backgroundColor: "rgba(210,31,60,0.06)",
-      borderWidth: 1,
-      borderColor: "rgba(210,31,60,0.22)",
+      backgroundColor: theme.colors.dangerTint,
       borderRadius: theme.radius.lg,
       padding: theme.spacing.md,
       marginBottom: theme.spacing.md,
     },
     warnText: { ...theme.type.body, color: theme.colors.danger },
 
-    // 2 ── carousel (fixed height keeps layout stable while photos load)
-    slide: {
-      width: CARD_W,
-      height: 180,
+    // up next (the one ink card on the screen)
+    upNext: {
+      backgroundColor: theme.colors.primary,
       borderRadius: theme.radius.xl,
-      overflow: "hidden",
-      backgroundColor: theme.colors.primary,
+      padding: theme.spacing.lg,
+      gap: theme.spacing.xs,
+      ...theme.shadow.card,
     },
-    slideFallback: {
-      ...StyleSheet.absoluteFill,
-      backgroundColor: theme.colors.primary,
-    },
-    slideImage: { ...StyleSheet.absoluteFill },
-    slideShade: {
-      ...StyleSheet.absoluteFill,
-      backgroundColor: "rgba(11,19,48,0.55)",
-    },
-    slideCopy: { position: "absolute", left: 16, right: 16, bottom: 14 },
-    slideKicker: {
-      color: theme.colors.onPrimary,
-      opacity: 0.85,
-      fontSize: 11,
-      fontWeight: "700",
+    kicker: {
+      ...theme.type.caption,
       fontFamily: theme.font.bold,
+      fontWeight: "700",
       letterSpacing: 1.5,
-      marginBottom: 4,
+      color: theme.colors.gold,
     },
-    slideTitle: {
-      color: theme.colors.onPrimary,
-      fontSize: 14,
-      fontWeight: "700",
-      fontFamily: theme.font.bold,
-      lineHeight: 25,
-    },
-    dots: {
+    upNextTitle: { ...theme.type.hero, color: theme.colors.onPrimary },
+    upNextFoot: {
       flexDirection: "row",
-      gap: 8,
-      justifyContent: "center",
-      paddingVertical: 12,
+      alignItems: "center",
+      marginTop: theme.spacing.xs,
     },
-    dot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: theme.colors.border,
+    upNextMeta: {
+      ...theme.type.caption,
+      color: theme.colors.onPrimaryMid,
+      textTransform: "capitalize",
     },
-    dotActive: { width: 28, backgroundColor: theme.colors.primary },
+    countdown: {
+      ...theme.type.mono,
+      color: theme.colors.onPrimary,
+      fontSize: 18,
+    },
+    clear: {
+      backgroundColor: theme.colors.softBlue,
+      borderRadius: theme.radius.xl,
+      padding: theme.spacing.lg,
+      gap: 4,
+    },
+    clearTitle: { ...theme.type.title, color: theme.colors.text },
+    clearBody: { ...theme.type.body, color: theme.colors.secondary },
 
-    // 3 ── actions
-    section: {
-      ...theme.type.title,
-      color: theme.colors.text,
-      marginTop: 16,
-      marginBottom: 8,
+    // quick actions
+    grid: {
+      flexDirection: "row",
+      gap: theme.spacing.xs,
+      marginTop: theme.spacing.md,
     },
-    grid: { flexDirection: "row", gap: 8 },
     action: {
       flex: 1,
       backgroundColor: theme.colors.surface,
       borderWidth: 1,
       borderColor: theme.colors.border,
       borderRadius: theme.radius.lg,
-      paddingVertical: 12,
+      paddingVertical: theme.spacing.sm,
       alignItems: "center",
-      gap: 8,
+      gap: theme.spacing.xs,
       ...theme.shadow.card,
     },
     actionIcon: {
-      width: 48,
+      width: 44,
       height: 44,
       borderRadius: 22,
       backgroundColor: theme.colors.softBlue,
@@ -417,90 +434,53 @@ const styles = themedStyles(() =>
       justifyContent: "center",
     },
     actionLabel: {
-      fontSize: 12,
-      fontWeight: "700",
+      ...theme.type.caption,
       fontFamily: theme.font.bold,
+      fontWeight: "700",
       color: theme.colors.text,
     },
 
-    // 4 ── academic calendar (midnight hero — the school's heartbeat)
-    calCard: {
-      backgroundColor: theme.colors.primary,
+    // academic week (light card: only one ink card per screen)
+    weekCard: {
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
       borderRadius: theme.radius.xl,
       padding: theme.spacing.md,
+      gap: theme.spacing.sm,
       ...theme.shadow.card,
     },
-    calRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 8,
-    },
-    calWeek: {
-      color: theme.colors.onPrimary,
-      fontSize: 22,
-      fontWeight: "700",
-      fontFamily: theme.font.bold,
+    weekRow: { flexDirection: "row", alignItems: "center" },
+    weekTitle: {
+      ...theme.type.title,
+      color: theme.colors.text,
       fontVariant: ["tabular-nums"],
     },
-    calMeta: {
-      color: "rgba(255,255,255,0.75)",
-      fontSize: 13,
-      fontFamily: theme.font.regular,
+    weekMeta: { ...theme.type.caption, color: theme.colors.secondary },
+    pct: {
+      backgroundColor: theme.colors.softBlue,
+      borderRadius: theme.radius.full,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
     },
-    calPct: {
-      backgroundColor: "rgba(255,255,255,0.16)",
-      borderRadius: 999,
-      paddingHorizontal: 14,
-      paddingVertical: 8,
-    },
-    calPctText: {
-      color: theme.colors.onPrimary,
-      fontWeight: "700",
-      fontFamily: theme.font.bold,
-      fontVariant: ["tabular-nums"],
-    },
-    bar: {
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: "rgba(255,255,255,0.2)",
-      overflow: "hidden",
-    },
-    barFill: {
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: theme.colors.onPrimary,
-    },
-    calNote: {
-      color: "rgba(255,255,255,0.85)",
-      fontSize: 13,
-      fontFamily: theme.font.regular,
-      marginTop: 8,
-    },
+    pctText: { ...theme.type.mono, color: theme.colors.text },
+    weekNote: { ...theme.type.caption, color: theme.colors.secondary },
 
-    // 5 ── schedule timeline
-    schedHead: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "flex-end",
-    },
-    link: {
-      color: theme.colors.accent,
-      fontWeight: "700",
-      fontFamily: theme.font.bold,
-      fontSize: 13,
-      marginBottom: 8,
-    },
+    // schedule
     slot: {
       flexDirection: "row",
       alignItems: "flex-start",
-      paddingVertical: 10,
+      paddingVertical: theme.spacing.sm,
+    },
+    slotDivider: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.border,
     },
     slotTime: {
-      width: 52,
-      fontSize: 13,
-      fontWeight: "700",
+      width: 76,
+      ...theme.type.caption,
       fontFamily: theme.font.bold,
+      fontWeight: "700",
       color: theme.colors.accent,
       fontVariant: ["tabular-nums"],
       paddingTop: 2,
@@ -520,31 +500,5 @@ const styles = themedStyles(() =>
       color: theme.colors.text,
     },
     slotMeta: { ...theme.type.caption, color: theme.colors.secondary },
-
-    // 6 ── catch-up posts
-    post: {
-      backgroundColor: theme.colors.surface,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: theme.radius.lg,
-      padding: theme.spacing.md,
-      marginBottom: 8,
-      ...theme.shadow.card,
-    },
-    postCode: {
-      fontSize: 13,
-      fontWeight: "700",
-      fontFamily: theme.font.bold,
-      color: theme.colors.accent,
-      marginBottom: 2,
-    },
-    postTitle: {
-      ...theme.type.body,
-      fontWeight: "700",
-      fontFamily: theme.font.bold,
-      color: theme.colors.text,
-      marginBottom: 2,
-    },
-    postMeta: { ...theme.type.caption, color: theme.colors.secondary },
   }),
 );

@@ -1,12 +1,5 @@
 import { useState } from "react";
-import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type GestureResponderEvent,
-} from "react-native";
+import { FlatList, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { theme } from "@/constants/theme";
 import {
@@ -14,113 +7,111 @@ import {
   ErrorState,
   LoadingState,
 } from "@/components/shared/States";
+import { SelectChip } from "@/components/shared/Chips";
+import { PenIcon } from "@/components/shared/Icons";
+import { PressableScale } from "@/components/shared/PressableScale";
+import { useDockTop } from "@/components/shared/Dock";
+import { PostCard } from "./PostCard";
 import { usePostsStore } from "@/stores/postsStore";
 import { useSessionStore } from "@/stores/sessionStore";
 import { themedStyles } from "@/components/themedStyles";
 
 // ─── MyPostsBody (CR post manager, no chrome) ───────────────────────
-// Mine/All-level toggle filters for real on `post.mine`; tapping a card
-// opens the read-only detail, Edit jumps straight to the form. Parents
-// own headers and FAB placement context.
+// Mine / All-level filter works on `post.mine`; tapping a card opens the
+// detail, Edit jumps straight to the form. Parents own headers.
+
+type Scope = "mine" | "all";
 
 export function MyPostsBody() {
   const router = useRouter();
+  const dockTop = useDockTop();
   const { posts, status, error, load } = usePostsStore();
   const levelId = useSessionStore((s) => s.levelId);
-  const [tab, setTab] = useState<"Mine" | "All level">("Mine");
+  const [scope, setScope] = useState<Scope>("mine");
 
-  const visible = tab === "Mine" ? posts.filter((p) => p.mine) : posts;
+  const visible = scope === "mine" ? posts.filter((p) => p.mine) : posts;
 
   if (status === "loading" && posts.length === 0) {
-    return (
-      <View style={styles.wrap}>
-        <LoadingState variant="post" message="Loading your posts…" />
-      </View>
-    );
+    return <LoadingState variant="post" message="Loading your posts…" />;
   }
-
   if (status === "error" && posts.length === 0) {
     return (
-      <View style={styles.wrap}>
-        <ErrorState
-          message={error}
-          actionLabel="Retry"
-          onAction={() => load(levelId ?? undefined)}
-        />
-      </View>
+      <ErrorState
+        message={error}
+        actionLabel="Retry"
+        onAction={() => load(levelId ?? undefined)}
+      />
     );
   }
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.toggle}>
-        {(["Mine", "All level"] as const).map((t) => (
-          <Pressable
-            key={t}
-            onPress={() => setTab(t)}
-            style={[styles.pill, tab === t && styles.pillActive]}
-          >
-            <Text style={[styles.pillText, tab === t && styles.pillTextActive]}>
-              {t === "Mine" ? "Mine" : "All level (Main CR)"}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
       <FlatList
         data={visible}
         keyExtractor={(p) => p.id}
         contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <View style={styles.chips}>
+            <SelectChip
+              label="Mine"
+              selected={scope === "mine"}
+              onPress={() => setScope("mine")}
+            />
+            <SelectChip
+              label="All level"
+              selected={scope === "all"}
+              onPress={() => setScope("all")}
+            />
+          </View>
+        }
         ListEmptyComponent={
           <EmptyState
-            title={tab === "Mine" ? "No posts yet" : "Nothing from assistants"}
+            pose={scope === "mine" ? "point" : "sleep"}
+            title={scope === "mine" ? "No posts yet" : "Nothing here yet"}
             body={
-              tab === "Mine"
-                ? "Your published updates live here with Upcoming / Past-due status."
-                : "Assistant CR posts for your level will appear here."
+              scope === "mine"
+                ? "Your published updates live here, with their due dates."
+                : "Posts from every CR in your level will appear here."
             }
-            actionLabel={tab === "Mine" ? "Write your first post" : undefined}
+            actionLabel={scope === "mine" ? "Write your first post" : undefined}
             onAction={
-              tab === "Mine"
+              scope === "mine"
                 ? () => router.push("/(cr)/posts/new" as never)
                 : undefined
             }
           />
         }
         renderItem={({ item }) => (
-          <Pressable
+          <PostCard
+            post={item}
             onPress={() => router.push(`/(cr)/post/${item.id}` as never)}
-            style={styles.card}
-          >
-            <View style={styles.top}>
-              <Text style={styles.code}>{item.courseCode}</Text>
-              <Text style={[styles.status, item.pastDue && styles.past]}>
-                {item.pastDue ? "Past due" : "Upcoming"}
-              </Text>
-            </View>
-            <Text style={styles.title}>{item.title}</Text>
-            <Text style={styles.meta}>
-              {item.postType} · {item.createdAt}
-            </Text>
-            {/* stopPropagation: Edit must not also open the detail. */}
-            <Pressable
-              onPress={(e: GestureResponderEvent) => {
-                e.stopPropagation();
-                router.push(`/(cr)/posts/${item.id}/edit` as never);
-              }}
-              hitSlop={8}
-              style={styles.editBtn}
-            >
-              <Text style={styles.editText}>Edit</Text>
-            </Pressable>
-          </Pressable>
+            footer={
+              <PressableScale
+                onPress={(e) => {
+                  e.stopPropagation?.();
+                  router.push(`/(cr)/posts/${item.id}/edit` as never);
+                }}
+                style={styles.editBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Edit post"
+              >
+                <Text style={styles.editText}>Edit</Text>
+              </PressableScale>
+            }
+          />
         )}
       />
-      <Pressable
+      <PressableScale
         onPress={() => router.push("/(cr)/posts/new" as never)}
-        style={styles.fab}
+        haptic="light"
+        style={[styles.fab, { bottom: dockTop + theme.spacing.md }]}
+        accessibilityRole="button"
+        accessibilityLabel="New post"
       >
-        <Text style={styles.fabText}>+ New post</Text>
-      </Pressable>
+        <PenIcon color={theme.colors.onPrimary} size={20} />
+        <Text style={styles.fabText}>New post</Text>
+      </PressableScale>
     </View>
   );
 }
@@ -128,108 +119,44 @@ export function MyPostsBody() {
 const styles = themedStyles(() =>
   StyleSheet.create({
     wrap: { flex: 1 },
-    toggle: {
-      flexDirection: "row",
-      gap: 8,
+    list: {
       padding: theme.spacing.md,
-      paddingBottom: 0,
+      paddingBottom: theme.layout.tabClearance + 72,
+      flexGrow: 1,
     },
-    pill: {
-      flex: 1,
-      minHeight: 44,
-      borderRadius: 999,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    pillActive: {
-      backgroundColor: theme.colors.inverseSurface,
-      borderColor: theme.colors.inverseSurface,
-    },
-    pillText: {
-      fontFamily: theme.font.bold,
-      fontWeight: "700",
-      color: theme.colors.text,
-      fontSize: 13,
-    },
-    pillTextActive: { color: theme.colors.onInverseSurface },
-    card: {
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: theme.radius.lg,
-      padding: theme.spacing.md,
-      marginBottom: 8,
-      backgroundColor: theme.colors.surface,
-      ...theme.shadow.card,
-    },
-    top: {
+    chips: {
       flexDirection: "row",
-      justifyContent: "space-between",
-      marginBottom: 4,
-    },
-    code: {
-      fontFamily: theme.font.bold,
-      fontWeight: "700",
-      fontSize: 13,
-      color: theme.colors.accent,
-    },
-    status: {
-      fontSize: 12,
-      fontFamily: theme.font.bold,
-      fontWeight: "700",
-      color: theme.colors.easy,
-      backgroundColor: "#E7F6EF",
-      borderRadius: 999,
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      overflow: "hidden",
-    },
-    past: {
-      color: theme.colors.secondary,
-      backgroundColor: theme.colors.muted,
-    },
-    title: {
-      ...theme.type.body,
-      fontFamily: theme.font.bold,
-      fontWeight: "700",
-      color: theme.colors.text,
-    },
-    meta: {
-      ...theme.type.caption,
-      color: theme.colors.secondary,
-      marginBottom: 8,
+      gap: theme.spacing.xs,
+      marginBottom: theme.spacing.sm,
     },
     editBtn: {
       alignSelf: "flex-start",
       backgroundColor: theme.colors.muted,
-      borderRadius: 999,
-      paddingHorizontal: 16,
+      borderRadius: theme.radius.full,
+      paddingHorizontal: theme.spacing.md,
       minHeight: 36,
       justifyContent: "center",
     },
     editText: {
+      ...theme.type.caption,
       fontFamily: theme.font.bold,
       fontWeight: "700",
-      fontSize: 13,
       color: theme.colors.text,
-    },
-    list: {
-      padding: theme.spacing.md,
-      paddingBottom: theme.layout.tabClearance + 72,
     },
     fab: {
       position: "absolute",
-      bottom: theme.layout.tabClearance,
-      left: 16,
-      right: 16,
-      backgroundColor: theme.colors.primary,
-      borderRadius: theme.radius.lg,
-      minHeight: 52,
+      right: theme.spacing.md,
+      flexDirection: "row",
       alignItems: "center",
-      justifyContent: "center",
+      gap: theme.spacing.xs,
+      backgroundColor: theme.colors.primary,
+      borderRadius: theme.radius.full,
+      minHeight: 52,
+      paddingHorizontal: theme.spacing.lg,
+      ...theme.shadow.card,
     },
     fabText: {
+      ...theme.type.body,
       color: theme.colors.onPrimary,
       fontFamily: theme.font.bold,
       fontWeight: "700",

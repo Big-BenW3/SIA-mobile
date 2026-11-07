@@ -1,12 +1,13 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import Animated, { FadeIn, useReducedMotion } from "react-native-reanimated";
 import { theme } from "@/constants/theme";
+import { duration } from "@/constants/motion";
 import { useNotificationStore } from "@/stores/appStores";
 import { useSessionStore } from "@/stores/sessionStore";
-import { BellIcon } from "@/components/shared/Icons";
-
-import { useBrandStore } from "@/stores/brandStore";
+import { BackIcon, BellIcon } from "@/components/shared/Icons";
 import { LogoMark } from "@/components/brand/Logos";
+import { PressableScale } from "@/components/shared/PressableScale";
 import { themedStyles } from "@/components/themedStyles";
 
 export function AppHeader({
@@ -19,6 +20,7 @@ export function AppHeader({
   onBack?: () => void;
 }) {
   const router = useRouter();
+  const reduce = useReducedMotion();
   const { setNotificationsOpen, unread } = useNotificationStore();
   const session = useSessionStore();
   const meta = [
@@ -27,41 +29,60 @@ export function AppHeader({
   ]
     .filter(Boolean)
     .join(" · ");
-  const { choice } = useBrandStore();
 
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>
         {showBack ? (
-          <Pressable
+          <PressableScale
             onPress={onBack ?? (() => router.back())}
-            hitSlop={16}
+            hitSlop={8}
             style={styles.back}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
           >
-            <Text style={styles.backText}>‹</Text>
-          </Pressable>
+            <BackIcon />
+          </PressableScale>
         ) : (
           <View style={styles.brandBox}>
-            <LogoMark choice={choice ?? "C"} size={34} />
-            <Text style={styles.brandText}>SuperStack</Text>
+            <LogoMark size={40} />
           </View>
         )}
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>{title}</Text>
-          {!!meta && <Text style={styles.meta}>{meta}</Text>}
+        <View style={styles.titles}>
+          <Text
+            style={styles.title}
+            numberOfLines={1}
+            accessibilityRole="header"
+          >
+            {title}
+          </Text>
+          {!!meta && (
+            <Text style={styles.meta} numberOfLines={1}>
+              {meta}
+            </Text>
+          )}
         </View>
-        <Pressable
+        <PressableScale
           onPress={() => setNotificationsOpen(true)}
-          hitSlop={12}
+          hitSlop={8}
           style={styles.bell}
+          accessibilityRole="button"
+          accessibilityLabel={
+            unread > 0 ? `Notifications, ${unread} unread` : "Notifications"
+          }
         >
           <BellIcon />
           {unread > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{unread}</Text>
-            </View>
+            <Animated.View
+              entering={reduce ? undefined : FadeIn.duration(duration.small)}
+              style={styles.badge}
+            >
+              <Text style={styles.badgeText}>
+                {unread > 99 ? "99+" : unread}
+              </Text>
+            </Animated.View>
           )}
-        </Pressable>
+        </PressableScale>
       </View>
     </View>
   );
@@ -74,34 +95,23 @@ const styles = themedStyles(() =>
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border,
       paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
     },
-    row: { flexDirection: "row", alignItems: "center", gap: 12 },
+    row: { flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
     brandBox: {
-      flexDirection: "row",
+      width: 44,
+      height: 44,
       alignItems: "center",
-      gap: 8,
-      paddingRight: 6,
-    },
-    brandText: {
-      ...theme.type.body,
-      color: theme.colors.text,
-      fontFamily: theme.font.bold,
-      fontWeight: "700",
-      letterSpacing: -0.4,
+      justifyContent: "center",
     },
     back: {
       width: 44,
       height: 44,
       alignItems: "center",
       justifyContent: "center",
+      marginLeft: -theme.spacing.xs,
     },
-    backText: {
-      fontSize: 28,
-      color: theme.colors.text,
-      fontWeight: "700",
-      fontFamily: theme.font.bold,
-    },
+    titles: { flex: 1 },
     title: { ...theme.type.title, color: theme.colors.text },
     meta: { ...theme.type.caption, color: theme.colors.secondary },
     bell: {
@@ -110,7 +120,6 @@ const styles = themedStyles(() =>
       alignItems: "center",
       justifyContent: "center",
     },
-    bellIcon: { fontSize: 22 },
     badge: {
       position: "absolute",
       top: 4,
@@ -122,10 +131,13 @@ const styles = themedStyles(() =>
       alignItems: "center",
       justifyContent: "center",
       paddingHorizontal: 5,
+      borderWidth: 2,
+      borderColor: theme.colors.surface,
     },
     badgeText: {
       color: theme.colors.onPrimary,
       fontSize: 11,
+      lineHeight: 14,
       fontWeight: "700",
       fontFamily: theme.font.bold,
     },

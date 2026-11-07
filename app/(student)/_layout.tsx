@@ -14,6 +14,7 @@ export default function StudentLayout() {
     >
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="post/[id]" />
+      <Stack.Screen name="updates" />
       <Stack.Screen name="calendar" />
       <Stack.Screen name="itinerary/add" />
       <Stack.Screen name="itinerary/[id]" />

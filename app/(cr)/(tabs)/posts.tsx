@@ -1,120 +1,87 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  Animated,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { StyleSheet, View, useWindowDimensions } from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, {
+  useAnimatedReaction,
+  useAnimatedRef,
+  useAnimatedScrollHandler,
+  useReducedMotion,
+  useSharedValue,
+} from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { theme } from "@/constants/theme";
 import { AppHeader } from "@/components/shared/AppHeader";
+import { SegmentedControl } from "@/components/shared/SegmentedControl";
 import { MyPostsBody } from "@/components/post/MyPostsBody";
 import { PlannerList } from "@/components/itinerary/PlannerList";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { themedStyles } from "@/components/themedStyles";
 
 // ─── CR Post|Plan merged tab ────────────────────────────────────────
 // One bottom tab, two top segments: the CR's publishing desk (Post) and
-// their private planner (Plan, the shared student body). Tap or swipe;
-// a sliding pill tracks the active segment. `?tab=plan` deep-links
-// straight to the planner. Both pages stay mounted, so switching never
-// loses scroll position or checkbox state.
+// their private planner (Plan, the shared student body). Tap or swipe; the
+// pill is driven by the pager's scroll position, so it follows the finger.
+// `?tab=plan` deep-links straight to the planner. Both pages stay mounted, so
+// switching never loses scroll position or checkbox state.
 
 const PAGES = ["Post", "Plan"] as const;
 
 export default function PostPlanTab() {
   const { width } = useWindowDimensions();
+  const reduce = useReducedMotion();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
   const initial = tab === "plan" ? 1 : 0;
 
   const [index, setIndex] = useState(initial);
-  const [segWidth, setSegWidth] = useState(0);
-  const pager = useRef<ScrollView>(null);
-  // Sliding indicator: native-driven translateX across the two segments.
-  // Lazy state init rather than a ref — the value is read while rendering.
-  const [slide] = useState(() => new Animated.Value(initial));
+  const pager = useAnimatedRef<Animated.ScrollView>();
+  const progress = useSharedValue(initial);
+
+  const onScroll = useAnimatedScrollHandler((e) => {
+    progress.set(e.contentOffset.x / width);
+  });
+
+  // The header title follows the page the pager is on: whenever the rounded
+  // position changes (swipe, tap, or deep link) hand the new index to React.
+  // Scrolling is the only source of truth, so there is no state to keep in sync.
+  useAnimatedReaction(
+    () => Math.round(progress.get()),
+    (current, previous) => {
+      if (current !== previous) scheduleOnRN(setIndex, current);
+    },
+  );
 
   const go = (i: number) => {
-    setIndex(i);
-    Animated.timing(slide, {
-      toValue: i,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-    pager.current?.scrollTo({ x: i * width, animated: true });
+    // The scroll handler above moves the pill (and the reaction the title).
+    pager.current?.scrollTo({ x: i * width, animated: !reduce });
   };
 
-  // Keep param-driven entry honest if `?tab=plan` arrives after mount. This
-  // is genuine external-state synchronisation (a navigation param), not a
-  // value derivable during render, so the setState belongs here.
+  // `?tab=plan` can arrive after mount (navigation param): scroll to it. This
+  // only drives the pager (an external system); it sets no React state.
+  const lastTab = useRef(tab);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (tab === "plan" && index !== 1) go(1);
+    if (tab === lastTab.current) return;
+    lastTab.current = tab;
+    if (tab === "plan") go(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
-
-  const page = segWidth / 2;
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <AppHeader title={index === 0 ? "My posts" : "My itinerary"} />
 
-      {/* Sliding top segments: same pill language as the Mine/All toggle. */}
       <View style={styles.segWrap}>
-        <View
-          style={styles.seg}
-          onLayout={(e) => setSegWidth(e.nativeEvent.layout.width)}
-          accessibilityRole="tablist"
-        >
-          {page > 0 && (
-            <Animated.View
-              style={[
-                styles.indicator,
-                {
-                  width: page - 8,
-                  transform: [
-                    {
-                      translateX: Animated.add(
-                        4,
-                        Animated.multiply(slide, page),
-                      ),
-                    },
-                  ],
-                },
-              ]}
-            />
-          )}
-          {PAGES.map((p, i) => (
-            <Pressable
-              key={p}
-              onPress={() => go(i)}
-              style={styles.segBtn}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: index === i }}
-            >
-              <Text
-                style={[styles.segText, index === i && styles.segTextActive]}
-              >
-                {p}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        <SegmentedControl labels={PAGES} progress={progress} onPress={go} />
       </View>
 
-      <ScrollView
+      <Animated.ScrollView
         ref={pager}
         horizontal
         pagingEnabled
+        bounces={false}
         showsHorizontalScrollIndicator={false}
         contentOffset={{ x: initial * width, y: 0 }}
-        onMomentumScrollEnd={(e) => {
-          const i = Math.round(e.nativeEvent.contentOffset.x / width);
-          if (i !== index) go(i);
-        }}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
       >
         <View style={{ width }}>
           <MyPostsBody />
@@ -122,7 +89,7 @@ export default function PostPlanTab() {
         <View style={{ width }}>
           <PlannerList base="(cr)" />
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }
@@ -133,35 +100,7 @@ const styles = themedStyles(() =>
     segWrap: {
       paddingHorizontal: theme.spacing.md,
       paddingTop: theme.spacing.xs,
+      paddingBottom: theme.spacing.xs,
     },
-    seg: {
-      flexDirection: "row",
-      backgroundColor: theme.colors.muted,
-      borderRadius: 999,
-      padding: 4,
-      position: "relative",
-    },
-    indicator: {
-      position: "absolute",
-      top: 4,
-      bottom: 4,
-      left: 0,
-      backgroundColor: theme.colors.surface,
-      borderRadius: 999,
-      ...theme.shadow.card,
-    },
-    segBtn: {
-      flex: 1,
-      minHeight: 44,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    segText: {
-      fontFamily: theme.font.bold,
-      fontWeight: "700",
-      fontSize: 14,
-      color: theme.colors.secondary,
-    },
-    segTextActive: { color: theme.colors.text },
   }),
 );

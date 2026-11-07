@@ -1,10 +1,22 @@
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useReducedMotion,
+} from "react-native-reanimated";
 import { theme } from "@/constants/theme";
+import { duration, ease } from "@/constants/motion";
 import { themedStyles } from "@/components/themedStyles";
 import { AppHeader } from "@/components/shared/AppHeader";
 import { Button } from "@/components/shared/Button";
+import { CloseIcon, TickIcon } from "@/components/shared/Icons";
+import { haptic } from "@/components/shared/PressableScale";
+import { ProgressBar } from "@/components/shared/ProgressBar";
+import { ErrorState, LoadingState } from "@/components/shared/States";
+import { Mascot } from "@/components/mascot/Mascot";
 import {
   ChoiceRow,
   QuestionMeta,
@@ -13,9 +25,7 @@ import {
 import { TestEmpty } from "@/components/test/TestEmpty";
 import { TestSetup } from "@/components/test/TestSetup";
 import { useBankQuestions } from "@/components/test/useBankQuestions";
-import { ErrorState, LoadingState } from "@/components/shared/States";
 import type { TestSelection } from "@/types";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 // ─── Study Mode ─────────────────────────────────────────────────────────────
 // One question at a time, no timer, no score. Answer, learn why, move on —
@@ -55,24 +65,28 @@ function StudyPaper({
   onReset: () => void;
   onExit: () => void;
 }) {
+  const reduce = useReducedMotion();
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
+  const [finished, setFinished] = useState(false);
   const { questions, error, retry } = useBankQuestions(selection);
+
+  // Error first: on failure `questions` is null too, so checking it first would
+  // show the loading skeleton forever.
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+        <AppHeader title="Study Mode" showBack onBack={onReset} />
+        <ErrorState message={error} actionLabel="Retry" onAction={retry} />
+      </SafeAreaView>
+    );
+  }
 
   if (!questions) {
     return (
       <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
         <AppHeader title="Study Mode" showBack onBack={onReset} />
         <LoadingState variant="question" message="Loading questions…" />
-      </SafeAreaView>
-    );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-        <AppHeader title="Study Mode" showBack onBack={onReset} />
-        <ErrorState message={error} actionLabel="Retry" onAction={retry} />
       </SafeAreaView>
     );
   }
@@ -87,9 +101,40 @@ function StudyPaper({
     );
   }
 
+  // ── Finished the set: a small, quiet win ──
+  if (finished) {
+    return (
+      <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+        <AppHeader title="Study Mode" showBack onBack={onExit} />
+        <Animated.View
+          entering={reduce ? undefined : FadeIn.duration(duration.enter)}
+          style={styles.done}
+        >
+          <Mascot pose="celebrate" size={140} label="Stax celebrating" />
+          <Text style={styles.doneTitle}>Set complete</Text>
+          <Text style={styles.doneBody}>
+            You went through {questions.length} question
+            {questions.length === 1 ? "" : "s"} for {selection.courseCode} ·{" "}
+            {selection.year}.
+          </Text>
+        </Animated.View>
+        <View style={styles.footer}>
+          <Button
+            title="Study more"
+            variant="secondary"
+            onPress={onReset}
+            style={styles.flex}
+          />
+          <Button title="Done" onPress={onExit} style={styles.flex} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const question = questions[Math.min(index, questions.length - 1)];
   const revealed = picked !== null;
   const isLast = index === questions.length - 1;
+  const correct = picked === question.answerIndex;
 
   const stateFor = (i: number): ChoiceState => {
     if (!revealed) return "idle";
@@ -98,9 +143,23 @@ function StudyPaper({
     return "idle";
   };
 
+  const choose = (i: number) => {
+    setPicked(i);
+    // The reveal is the commit: one success/error haptic, paired with the
+    // coloured, marked rows (never the only feedback).
+    haptic(i === question.answerIndex ? "success" : "error");
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
       <AppHeader title="Study Mode" showBack onBack={onExit} />
+      <View style={styles.progress}>
+        <ProgressBar
+          value={((index + (revealed ? 1 : 0)) / questions.length) * 100}
+          tone="ink"
+          label="Study progress"
+        />
+      </View>
 
       <ScrollView
         contentContainerStyle={styles.body}
@@ -114,12 +173,12 @@ function StudyPaper({
 
         {question.options.map((opt, i) => (
           <ChoiceRow
-            key={opt}
+            key={`${i}-${opt}`}
             index={i}
             text={opt}
             state={stateFor(i)}
             disabled={revealed}
-            onPress={() => setPicked(i)}
+            onPress={() => choose(i)}
           />
         ))}
 
@@ -130,15 +189,40 @@ function StudyPaper({
         )}
 
         {revealed && (
-          <View style={styles.explain}>
-            <Text style={styles.explainTitle}>
-              {picked === question.answerIndex ? "Correct" : "Not quite"}
-            </Text>
+          <Animated.View
+            entering={
+              reduce
+                ? FadeIn.duration(duration.small)
+                : FadeInDown.duration(duration.enter).easing(ease.out)
+            }
+            style={[
+              styles.explain,
+              correct ? styles.explainOk : styles.explainNo,
+            ]}
+            accessibilityLiveRegion="polite"
+          >
+            <View style={styles.explainHead}>
+              {correct ? (
+                <TickIcon size={18} color={theme.colors.success} />
+              ) : (
+                <CloseIcon size={18} color={theme.colors.danger} />
+              )}
+              <Text
+                style={[
+                  styles.explainTitle,
+                  {
+                    color: correct ? theme.colors.success : theme.colors.danger,
+                  },
+                ]}
+              >
+                {correct ? "Correct" : "Not quite"}
+              </Text>
+            </View>
             <Text style={styles.explainBody}>
               {question.explanation ??
                 `The answer is ${question.options[question.answerIndex]}.`}
             </Text>
-          </View>
+          </Animated.View>
         )}
       </ScrollView>
 
@@ -147,7 +231,7 @@ function StudyPaper({
           title="Change filters"
           variant="secondary"
           onPress={onReset}
-          style={{ flex: 1 }}
+          style={styles.flex}
         />
         <Button
           title={isLast ? "Finish" : "Next question"}
@@ -155,13 +239,13 @@ function StudyPaper({
           onPress={() => {
             if (!revealed) return;
             if (isLast) {
-              onExit();
+              setFinished(true);
               return;
             }
             setIndex((i) => i + 1);
             setPicked(null);
           }}
-          style={{ flex: 1 }}
+          style={styles.flex}
         />
       </View>
     </SafeAreaView>
@@ -171,6 +255,11 @@ function StudyPaper({
 const styles = themedStyles(() =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: theme.colors.background },
+    flex: { flex: 1 },
+    progress: {
+      paddingHorizontal: theme.spacing.md,
+      paddingTop: theme.spacing.xs,
+    },
     body: { padding: theme.spacing.md, paddingBottom: theme.spacing.lg },
     prompt: {
       ...theme.type.title,
@@ -181,23 +270,52 @@ const styles = themedStyles(() =>
       ...theme.type.caption,
       color: theme.colors.secondary,
       textAlign: "center",
-      marginTop: 4,
+      marginTop: theme.spacing.xs,
     },
     explain: {
       marginTop: theme.spacing.sm,
       padding: theme.spacing.md,
       borderRadius: theme.radius.lg,
-      backgroundColor: theme.colors.softBlue,
       borderLeftWidth: 3,
-      borderLeftColor: theme.colors.accent,
+      gap: theme.spacing.xs,
+    },
+    explainOk: {
+      backgroundColor: theme.colors.successTint,
+      borderLeftColor: theme.colors.success,
+    },
+    explainNo: {
+      backgroundColor: theme.colors.dangerTint,
+      borderLeftColor: theme.colors.danger,
+    },
+    explainHead: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.xs,
     },
     explainTitle: {
-      ...theme.type.caption,
+      ...theme.type.body,
       fontFamily: theme.font.bold,
       fontWeight: "700",
-      color: theme.colors.accent,
     },
-    explainBody: { ...theme.type.body, color: theme.colors.text, marginTop: 4 },
+    explainBody: { ...theme.type.body, color: theme.colors.text },
+    done: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: theme.spacing.lg,
+      gap: theme.spacing.xs,
+    },
+    doneTitle: {
+      ...theme.type.hero,
+      color: theme.colors.text,
+      textAlign: "center",
+    },
+    doneBody: {
+      ...theme.type.body,
+      color: theme.colors.secondary,
+      textAlign: "center",
+      maxWidth: 320,
+    },
     footer: {
       flexDirection: "row",
       gap: theme.spacing.xs,

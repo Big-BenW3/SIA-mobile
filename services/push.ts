@@ -43,17 +43,40 @@ function ensureHandler(Notifications: NotificationsModule) {
   }
 }
 
-export async function registerPushToken(): Promise<string | null> {
+export type PushStatus = "granted" | "undetermined" | "denied" | "unavailable";
+
+// Read the OS permission WITHOUT prompting, so the UI can decide whether (and
+// when) to explain and ask. "unavailable" = Expo Go, simulator or no module.
+export async function getPushStatus(): Promise<PushStatus> {
+  try {
+    const Notifications = getNotifications();
+    if (!Notifications || !Device.isDevice) return "unavailable";
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status === "granted") return "granted";
+    if (status === "denied") return "denied";
+    return "undetermined";
+  } catch {
+    return "unavailable";
+  }
+}
+
+// `prompt: false` (default) only refreshes the token when the user already said
+// yes. The system dialog appears only when a screen explicitly passes
+// `prompt: true` after explaining why (see NotificationPrimer).
+export async function registerPushToken(
+  opts: { prompt?: boolean } = {},
+): Promise<string | null> {
   try {
     const Notifications = getNotifications();
     if (!Notifications) return null;
     if (!Device.isDevice) return null;
     ensureHandler(Notifications);
     const { status: existing } = await Notifications.getPermissionsAsync();
-    const status =
-      existing === "granted"
-        ? existing
-        : (await Notifications.requestPermissionsAsync()).status;
+    let status = existing;
+    if (existing !== "granted") {
+      if (!opts.prompt) return null;
+      status = (await Notifications.requestPermissionsAsync()).status;
+    }
     if (status !== "granted") return null;
     if (Platform.OS === "android") {
       await Notifications.setNotificationChannelAsync("default", {

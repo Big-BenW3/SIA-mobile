@@ -1,6 +1,5 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Animated,
   Modal,
   PanResponder,
   Pressable,
@@ -12,27 +11,47 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, {
+  Extrapolation,
+  cancelAnimation,
+  interpolate,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { theme } from "@/constants/theme";
+import { ease, spring } from "@/constants/motion";
 import { useNotificationStore } from "@/stores/appStores";
-import { Button } from "./Button";
-import { RowListSkeleton } from "./Skeleton";
-
 import { useAuthStore } from "@/stores/authStore";
+import { timeAgo } from "@/utils/due";
+import { CloseIcon } from "./Icons";
+import { EmptyState, ErrorState } from "./States";
+import { PressableScale } from "./PressableScale";
+import { RowListSkeleton } from "./Skeleton";
 import { themedStyles } from "@/components/themedStyles";
 
-// Notification panel — server list with local read state; push arrives
-// via Expo Push (registered at login) and lands here on next load.
+// ─── Notification panel ────────────────────────────────────────────
+// Server list with local read state; push arrives via Expo Push and lands here
+// on the next load (we also refresh every time the sheet opens).
 //
-// Two heights, one sheet. It opens as a peek (about half the screen) and a
-// drag up expands it to full height, drag down shrinks it back, drag down
-// from the peek dismisses it. Release in the middle snaps to the nearest detent.
+// One sheet, two detents. It opens as a peek (about half the screen); drag up
+// to expand, drag down to shrink or dismiss. Everything moves with translateY
+// on the UI runtime: the sheet is always laid out at full height and slid, so
+// no layout work happens during a drag. Release picks the nearest detent from
+// where the sheet is GOING (position + velocity), so a quick flick is enough.
+
 const PEEK_RATIO = 0.52;
+const FULL_RATIO = 0.92;
 
 export function NotificationPanel() {
   const {
     notificationsOpen,
     setNotificationsOpen,
     list,
+    unread,
     markRead,
     markAllRead,
     status,
@@ -40,107 +59,209 @@ export function NotificationPanel() {
   } = useNotificationStore();
   const { user } = useAuthStore();
   const router = useRouter();
-  const { height: screenHeight } = useWindowDimensions();
-  // Full-bleed sheet: it claims the bottom of the screen, so it owns the
-  // home-indicator inset rather than inheriting it from a SafeAreaView.
+  const reduce = useReducedMotion();
   const insets = useSafeAreaInsets();
+  const { height: screenHeight } = useWindowDimensions();
   // Deep-link into the viewer's own stack (student ⇄ CR share post IDs).
   const home = user?.role === "cr" ? "/(cr)" : "/(student)";
 
-  const fullHeight = Math.round(screenHeight * 0.92);
+  const fullHeight = Math.round(screenHeight * FULL_RATIO);
   const peekHeight = Math.round(screenHeight * PEEK_RATIO);
-  // Offset from the peek baseline: 0 is peek, negative grows toward full.
-  const rise = fullHeight - peekHeight;
-  const [offset, setOffset] = useState(0);
-  const offsetRef = useRef(0);
-  const [anim] = useState(() => new Animated.Value(0));
+  const peekY = fullHeight - peekHeight; // translateY at the peek detent
+  const hiddenY = fullHeight; // fully off-screen
 
-  const snap = (to: number) => {
-    setOffset(to);
-    offsetRef.current = to;
-    Animated.spring(anim, {
-      toValue: to,
-      useNativeDriver: false,
-      bounciness: 0,
-    }).start();
+  const y = useSharedValue(hiddenY);
+  const [mounted, setMounted] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  // Mount the Modal (and reset to the peek detent) the render the store flag
+  // turns true: derived state adjusted during render, not in an effect.
+  if (notificationsOpen && !mounted) setMounted(true);
+
+  // Runs on the RN runtime once the exit animation completes.
+  const onClosed = () => {
+    setMounted(false);
+    setExpanded(false);
   };
 
+  // Single path for open and close: the store flag drives the animation.
+  useEffect(() => {
+    if (notificationsOpen) {
+      y.set(hiddenY);
+      y.set(
+        withTiming(peekY, {
+          duration: reduce ? 0 : 300,
+          easing: ease.sheet,
+        }),
+      );
+      void load();
+    } else {
+      y.set(
+        withTiming(
+          hiddenY,
+          { duration: reduce ? 0 : 220, easing: ease.out },
+          (finished) => {
+            if (finished) scheduleOnRN(onClosed);
+          },
+        ),
+      );
+    }
+    // load/y are stable; detents only change on rotation
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notificationsOpen]);
+
+  const startY = useRef(0);
   const pan = useMemo(
     () =>
-      // PanResponder keeps its own internal mutable state; the linter's
-      // ref-in-render heuristic does not model that, and this is the
-      // documented way to build one.
       // eslint-disable-next-line react-hooks/refs
       PanResponder.create({
-        onStartShouldSetPanResponder: () => false,
-        onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dy) > 6,
-        onPanResponderGrant: () => anim.stopAnimation(),
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dy) > 4,
+        onPanResponderGrant: () => {
+          cancelAnimation(y);
+          startY.current = y.get();
+        },
         onPanResponderMove: (_e, g) => {
-          const next = Math.min(0, Math.max(-rise, offsetRef.current + g.dy));
-          anim.setValue(next);
+          const raw = startY.current + g.dy;
+          // Rubber-band above the full detent instead of a hard stop.
+          y.set(raw < 0 ? raw * 0.25 : raw);
         },
         onPanResponderRelease: (_e, g) => {
-          const dragged = offsetRef.current + g.dy;
-          if (offsetRef.current === 0 && g.dy > 110)
+          // Project where the flick is heading (vy is px/ms), then snap to the
+          // nearest detent: velocity OR distance, never distance alone.
+          const projected = y.get() + g.vy * 220;
+          const detents = [0, peekY, hiddenY];
+          const target = detents.reduce((best, d) =>
+            Math.abs(d - projected) < Math.abs(best - projected) ? d : best,
+          );
+          if (target === hiddenY) {
             setNotificationsOpen(false);
-          else snap(dragged < -rise / 2 ? -rise : 0);
+            return;
+          }
+          setExpanded(target === 0);
+          y.set(
+            withSpring(target, {
+              ...spring.sheet,
+              velocity: g.vy * 1000,
+              overshootClamping: true,
+            }),
+          );
         },
       }),
-    // `snap` closes over setOffset (stable) and `rise`, which only changes on
-    // rotation — recreating the responder then is correct.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [anim, rise, setNotificationsOpen],
+    [peekY, hiddenY, setNotificationsOpen],
   );
 
-  const close = () => {
-    setOffset(0);
-    offsetRef.current = 0;
-    anim.setValue(0);
-    setNotificationsOpen(false);
-  };
+  const sheet = useAnimatedStyle(() => ({
+    transform: [{ translateY: y.get() }],
+  }));
+  const scrim = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      y.get(),
+      [peekY, hiddenY],
+      [1, 0],
+      Extrapolation.CLAMP,
+    ),
+  }));
+
+  const close = () => setNotificationsOpen(false);
 
   return (
     <Modal
-      visible={notificationsOpen}
-      animationType="slide"
+      visible={mounted}
+      animationType="none"
       transparent
+      statusBarTranslucent
       onRequestClose={close}
     >
-      <View style={styles.overlay}>
-        <Animated.View
-          style={[styles.sheet, { height: peekHeight, marginBottom: anim }]}
-        >
-          <View style={styles.inner} {...pan.panHandlers}>
+      <View style={styles.root}>
+        <Animated.View style={[StyleSheet.absoluteFill, styles.scrim, scrim]}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={close}
+            accessibilityRole="button"
+            accessibilityLabel="Close notifications"
+          />
+        </Animated.View>
+
+        <Animated.View style={[styles.sheet, { height: fullHeight }, sheet]}>
+          <View {...pan.panHandlers} style={styles.dragZone}>
             <View style={styles.handle} />
-            <Text style={styles.title}>Notifications</Text>
+            <View style={styles.headRow}>
+              <View style={styles.titleRow}>
+                <Text style={styles.title} accessibilityRole="header">
+                  Notifications
+                </Text>
+                {unread > 0 && (
+                  <View style={styles.count}>
+                    <Text style={styles.countText}>{unread}</Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.headActions}>
+                {unread > 0 && (
+                  <PressableScale
+                    onPress={markAllRead}
+                    hitSlop={8}
+                    style={styles.textBtn}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.textBtnLabel}>Mark all read</Text>
+                  </PressableScale>
+                )}
+                <PressableScale
+                  onPress={close}
+                  hitSlop={8}
+                  style={styles.closeBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel="Close"
+                >
+                  <CloseIcon size={20} />
+                </PressableScale>
+              </View>
+            </View>
           </View>
+
           <ScrollView
-            style={{ maxHeight: offset === 0 ? 420 : fullHeight }}
-            contentContainerStyle={styles.list}
+            style={styles.scroll}
+            contentContainerStyle={[
+              styles.list,
+              {
+                // At peek the lower part of the sheet is off-screen; pad the
+                // end so the last rows can still be scrolled into view.
+                paddingBottom:
+                  Math.max(insets.bottom, theme.spacing.md) +
+                  (expanded ? 0 : peekY),
+              },
+            ]}
+            showsVerticalScrollIndicator={false}
           >
             {status === "loading" && list.length === 0 && (
               <RowListSkeleton count={3} leading={36} />
             )}
             {status === "error" && list.length === 0 && (
-              <View style={styles.err}>
-                <Text style={styles.errText}>
-                  Could not load your notifications.
-                </Text>
-                <View style={{ height: theme.spacing.xs }} />
-                <Button title="Retry" variant="secondary" onPress={load} />
-              </View>
+              <ErrorState
+                title="Couldn't load notifications"
+                message="Check your connection and try again."
+                actionLabel="Retry"
+                onAction={load}
+              />
             )}
             {status !== "loading" &&
               status !== "error" &&
               list.length === 0 && (
-                <Text style={styles.nBody}>
-                  No notifications yet. New posts and replies will land here.
-                </Text>
+                <View style={styles.empty}>
+                  <EmptyState
+                    pose="sleep"
+                    title="All caught up"
+                    body="New posts and replies will land here."
+                  />
+                </View>
               )}
             {list.map((n) => {
-              const unread = !n.read;
+              const isUnread = !n.read;
               return (
-                <Pressable
+                <PressableScale
                   key={n.id}
                   onPress={() => {
                     markRead(n.id);
@@ -148,37 +269,20 @@ export function NotificationPanel() {
                     if (n.postId)
                       router.push(`${home}/post/${n.postId}` as never);
                   }}
-                  style={[styles.row, unread && styles.unread]}
+                  style={[styles.row, isUnread && styles.unread]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${isUnread ? "Unread. " : ""}${n.title}. ${n.body}`}
                 >
-                  <View style={[styles.pip, unread && styles.pipUnread]} />
-                  <View style={{ flex: 1 }}>
+                  <View style={[styles.pip, isUnread && styles.pipUnread]} />
+                  <View style={styles.rowBody}>
                     <Text style={styles.nTitle}>{n.title}</Text>
                     <Text style={styles.nBody}>{n.body}</Text>
-                    <Text style={styles.nMeta}>{n.createdAt}</Text>
+                    <Text style={styles.nMeta}>{timeAgo(n.createdAt)}</Text>
                   </View>
-                </Pressable>
+                </PressableScale>
               );
             })}
           </ScrollView>
-          <View
-            style={[
-              styles.footer,
-              { paddingBottom: Math.max(insets.bottom, theme.spacing.md) },
-            ]}
-          >
-            <View style={styles.footerRow}>
-              <View style={{ flex: 1 }}>
-                <Button
-                  title="Mark all read"
-                  variant="secondary"
-                  onPress={markAllRead}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Button title="Close" variant="secondary" onPress={close} />
-              </View>
-            </View>
-          </View>
         </Animated.View>
       </View>
     </Modal>
@@ -187,51 +291,97 @@ export function NotificationPanel() {
 
 const styles = themedStyles(() =>
   StyleSheet.create({
-    overlay: {
-      flex: 1,
-      backgroundColor: theme.colors.scrim,
-      justifyContent: "flex-end",
-    },
+    root: { flex: 1, justifyContent: "flex-end" },
+    scrim: { backgroundColor: theme.colors.scrim },
     sheet: {
+      width: "100%",
+      maxWidth: 640,
+      alignSelf: "center",
       backgroundColor: theme.colors.sheet,
       borderTopLeftRadius: theme.radius.xl,
       borderTopRightRadius: theme.radius.xl,
-      paddingTop: theme.spacing.md,
+      overflow: "hidden",
     },
-    inner: { paddingHorizontal: theme.spacing.md },
+    dragZone: {
+      paddingHorizontal: theme.spacing.md,
+      paddingTop: theme.spacing.xs,
+      paddingBottom: theme.spacing.xs,
+    },
     handle: {
       width: 48,
       height: 4,
       borderRadius: 2,
       backgroundColor: theme.colors.border,
       alignSelf: "center",
-      marginBottom: 8,
+      marginBottom: theme.spacing.xs,
     },
-    title: { ...theme.type.title, color: theme.colors.text, marginBottom: 8 },
-    list: {
-      paddingHorizontal: theme.spacing.md,
-      paddingBottom: theme.spacing.sm,
+    headRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    titleRow: {
+      flexDirection: "row",
+      alignItems: "center",
       gap: theme.spacing.xs,
     },
+    title: { ...theme.type.title, color: theme.colors.text },
+    count: {
+      minWidth: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: theme.colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 6,
+    },
+    countText: {
+      ...theme.type.caption,
+      fontFamily: theme.font.bold,
+      fontWeight: "700",
+      color: theme.colors.onPrimary,
+    },
+    headActions: { flexDirection: "row", alignItems: "center" },
+    textBtn: {
+      minHeight: 44,
+      justifyContent: "center",
+      paddingHorizontal: theme.spacing.xs,
+    },
+    textBtnLabel: {
+      ...theme.type.caption,
+      fontFamily: theme.font.bold,
+      fontWeight: "700",
+      color: theme.colors.accent,
+    },
+    closeBtn: {
+      width: 44,
+      height: 44,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    scroll: { flex: 1 },
+    list: { paddingHorizontal: theme.spacing.md, gap: theme.spacing.xs },
+    empty: { minHeight: 260 },
     row: {
       flexDirection: "row",
-      gap: 12,
+      gap: theme.spacing.sm,
       padding: theme.spacing.sm,
-      marginBottom: theme.spacing.xs,
-      borderRadius: theme.spacing.sm,
+      borderRadius: theme.radius.md,
       borderWidth: 1,
       borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
     },
     unread: {
       backgroundColor: theme.colors.softBlue,
       borderColor: theme.colors.softBlue,
     },
+    rowBody: { flex: 1, gap: 2 },
     pip: {
       width: 8,
       height: 8,
       borderRadius: 4,
       backgroundColor: theme.colors.border,
-      marginTop: 6,
+      marginTop: 7,
     },
     pipUnread: { backgroundColor: theme.colors.primary },
     nTitle: {
@@ -242,12 +392,5 @@ const styles = themedStyles(() =>
     },
     nBody: { ...theme.type.body, color: theme.colors.body },
     nMeta: { ...theme.type.caption, color: theme.colors.secondary },
-    err: { alignItems: "flex-start", paddingVertical: theme.spacing.xs },
-    errText: { ...theme.type.body, color: theme.colors.danger },
-    footer: {
-      paddingHorizontal: theme.spacing.md,
-      paddingTop: theme.spacing.sm,
-    },
-    footerRow: { flexDirection: "row", gap: theme.spacing.xs },
   }),
 );

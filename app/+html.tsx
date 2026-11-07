@@ -11,10 +11,14 @@ export default function Root({ children }: { children: ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+        {/* viewport-fit=cover lets the page paint under the notch; safe-area
+            insets then pad content. Zoom stays enabled (accessibility). */}
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, shrink-to-fit=no"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
         />
+        <meta name="theme-color" content="#FFFFFF" />
+        <meta name="color-scheme" content="light" />
 
         {/*
           Disable body scrolling on web. This makes ScrollView components work closer to how they do on native.
@@ -34,4 +38,12 @@ export default function Root({ children }: { children: ReactNode }) {
 const background = `
 body {
   background-color: #fff;
+}
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+button, a, [role="button"] {
+  touch-action: manipulation;
 }`;

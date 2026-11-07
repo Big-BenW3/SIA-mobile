@@ -29,8 +29,30 @@ export interface ResourceDto {
   title: string;
   fileUrl: string;
   fileType: string;
+  /** Who uploaded it (user id). Drives who may delete it. */
+  uploadedBy: string;
   createdAt: string;
 }
+
+// Mirrors the server's upload allowlist (backend/src/utils/upload.ts) so the
+// app can refuse an unsupported file before wasting an upload. The server
+// remains the authority.
+export const UPLOAD_EXTENSIONS = [
+  "pdf",
+  "doc",
+  "docx",
+  "ppt",
+  "pptx",
+  "xls",
+  "xlsx",
+  "txt",
+  "png",
+  "jpg",
+  "jpeg",
+  "webp",
+  "zip",
+] as const;
+export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
 export interface SemesterStateDto {
   currentSemester: string;
@@ -56,6 +78,7 @@ export interface CalendarEventDto {
 
 export const sessionApi = {
   me(): Promise<{
+    id: string;
     level?: string | null;
     roleInLevel?: string | null;
     fullName: string;
@@ -103,6 +126,22 @@ export const sessionApi = {
       difficulty: input.difficulty,
     });
   },
+  /** Remove the server mirror of a task (the mirror exists only for arrange). */
+  deleteTask(serverId: string): Promise<unknown> {
+    return api.del(`/api/itinerary/${serverId}`);
+  },
+  /** Keep the mirror in step with local edits so arrange never sees stale rows. */
+  patchTask(
+    serverId: string,
+    patch: {
+      status?: "pending" | "done";
+      difficulty?: string;
+      title?: string;
+      scheduledDate?: string | null;
+    },
+  ): Promise<unknown> {
+    return api.patch(`/api/itinerary/${serverId}`, patch);
+  },
   notifications(): Promise<AppNotification[]> {
     return api.get<AppNotification[]>("/api/notifications");
   },
@@ -133,12 +172,25 @@ export const sessionApi = {
       name: input.name,
       type: input.mimeType,
     } as unknown as Blob);
-    const token = getAccessToken();
-    const res = await fetch(`${API_BASE}/api/resources`, {
-      method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: form,
-    });
+    const send = () => {
+      const token = getAccessToken();
+      return fetch(`${API_BASE}/api/resources`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: form,
+      });
+    };
+    let res = await send();
+    if (res.status === 401) {
+      // Multipart bypasses the JSON client's silent refresh, so trigger it
+      // with a cheap authenticated call, then retry the upload once.
+      try {
+        await api.get("/api/users/me");
+        res = await send();
+      } catch {
+        // fall through to the error handling below with the original 401
+      }
+    }
     if (!res.ok) {
       let message = `Upload failed (${res.status}).`;
       try {
