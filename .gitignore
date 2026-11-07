@@ -43,3 +43,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# private planning / product docs (kept local, not published)
+/PLAN.md
+/Product-Architecture-Database.md
+/App-Flow.md

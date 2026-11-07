@@ -1,9 +1,25 @@
 import { create } from "zustand";
 import { authApi, type SessionUser } from "@/services/auth.service";
 import { usersApi } from "@/services/users.service";
-import { ApiError } from "@/services/api";
+import { ApiError, setSessionExpiredHandler } from "@/services/api";
 import { useSessionStore } from "@/stores/sessionStore";
 import { usePostsStore } from "@/stores/postsStore";
+
+// When the API layer learns the session is over (refresh token revoked,
+// reused, expired, or the account disabled) it has already cleared the tokens;
+// this drops the in-memory session so the route gate sends the user to login.
+// No network call: there is nothing left to revoke. (Runs later, so referencing
+// `useAuthStore` before its declaration below is fine.)
+setSessionExpiredHandler(() => {
+  useSessionStore.getState().reset();
+  usePostsStore.getState().reset();
+  useAuthStore.setState({
+    user: null,
+    pendingLevel: null,
+    status: "idle",
+    error: "Your session has ended. Please log in again.",
+  });
+});
 
 // ─── Auth store (real backend) ──────────────────────────────────────
 // Tokens persist in on-device SQLite (meta table) via the api client,
